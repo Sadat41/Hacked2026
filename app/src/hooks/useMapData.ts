@@ -2,6 +2,67 @@ import { useState, useCallback } from "react";
 import type { LayerConfig, MapLayer } from "../types";
 import { LAYER_CONFIGS } from "../config/layers";
 
+function extractGeometry(
+  item: Record<string, unknown>,
+  config: LayerConfig
+): GeoJSON.Geometry | null {
+  // Polygon layers: geometry is in the "geometry" field
+  if (config.type === "polygon" && item.geometry) {
+    return item.geometry as GeoJSON.Geometry;
+  }
+
+  // GeoJSON layers: geometry in "the_geom" or custom geomField
+  if (config.type === "geojson") {
+    const field = config.geomField ?? "the_geom";
+    if (item[field]) return item[field] as GeoJSON.Geometry;
+  }
+
+  // Point layers with a geometry object field (e.g. "point", "geometry", "geometry_point")
+  if (config.latField) {
+    const geom = item[config.latField] as
+      | { type: string; coordinates: number[] }
+      | undefined;
+    if (geom?.coordinates) {
+      return { type: "Point", coordinates: geom.coordinates };
+    }
+  }
+
+  // Point layers: try geometry_point field first
+  if (item.geometry_point) {
+    const gp = item.geometry_point as
+      | { type: string; coordinates: number[] }
+      | undefined;
+    if (gp?.coordinates) {
+      return { type: "Point", coordinates: gp.coordinates };
+    }
+  }
+
+  // Point layers: fallback to lat/lng fields
+  if (config.type === "point") {
+    const lat = parseFloat(String(item.latitude ?? ""));
+    const lng = parseFloat(String(item.longitude ?? ""));
+    if (!isNaN(lat) && !isNaN(lng)) {
+      // Guard against swapped lat/lng (Edmonton is ~53N, ~-113W)
+      if (Math.abs(lat) > 90 && Math.abs(lng) < 90) {
+        return { type: "Point", coordinates: [lat, lng] };
+      }
+      return { type: "Point", coordinates: [lng, lat] };
+    }
+  }
+
+  return null;
+}
+
+const SKIP_KEYS = new Set([
+  "geometry",
+  "the_geom",
+  "geometry_multipolygon",
+  "geometry_point",
+  "location",
+  "geocoded_column",
+  "point",
+]);
+
 function toGeoJSON(
   raw: Record<string, unknown>[],
   config: LayerConfig
@@ -9,34 +70,12 @@ function toGeoJSON(
   const features: GeoJSON.Feature[] = [];
 
   for (const item of raw) {
-    let geometry: GeoJSON.Geometry | null = null;
-
-    if (config.type === "polygon" && item.geometry) {
-      geometry = item.geometry as GeoJSON.Geometry;
-    } else if (config.type === "geojson" && item.the_geom) {
-      geometry = item.the_geom as GeoJSON.Geometry;
-    } else if (config.type === "point") {
-      const lat = parseFloat(
-        (item.latitude as string) ?? (item.lat as string) ?? ""
-      );
-      const lng = parseFloat(
-        (item.longitude as string) ?? (item.lng as string) ?? ""
-      );
-      if (!isNaN(lat) && !isNaN(lng)) {
-        geometry = { type: "Point", coordinates: [lng, lat] };
-      }
-    }
-
+    const geometry = extractGeometry(item, config);
     if (!geometry) continue;
 
     const properties: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(item)) {
-      if (
-        k !== "geometry" &&
-        k !== "the_geom" &&
-        k !== "location" &&
-        !k.startsWith(":@")
-      ) {
+      if (!SKIP_KEYS.has(k) && !k.startsWith(":@")) {
         properties[k] = v;
       }
     }
