@@ -7,6 +7,10 @@ export interface LayerConfig {
   category: "infrastructure" | "environment" | "energy";
   endpoint: string;
   type: "point" | "polygon" | "geojson";
+  /** Field name containing geometry (for non-standard column names) */
+  geomField?: string;
+  /** Field containing point geometry when not using lat/lng directly */
+  latField?: string;
   style: PathOptions;
   pointColor?: string;
   pointRadius?: number;
