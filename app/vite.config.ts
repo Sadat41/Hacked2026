@@ -1,8 +1,21 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  base: '/Hacked2026/',
-})
+  base: command === 'build' ? '/Hacked2026/' : '/',
+  server: {
+    proxy: {
+      '/arcgis': {
+        target: 'https://services.arcgis.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/arcgis/, ''),
+      },
+      '/weatherapi': {
+        target: 'https://api.weather.gc.ca',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/weatherapi/, ''),
+      },
+    },
+  },
+}))

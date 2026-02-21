@@ -9,6 +9,16 @@ interface Props {
 }
 
 function CategoryIcon({ cat }: { cat: string }) {
+  if (cat === "flood")
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" />
+        <path d="M8 16l-2.3 2.3" />
+        <path d="M12 12l-2.3 2.3" />
+        <path d="M16 16l-2.3 2.3" />
+        <path d="M12 20l-2.3 2.3" />
+      </svg>
+    );
   if (cat === "infrastructure")
     return (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -74,7 +84,7 @@ export default function Sidebar({ layers, onToggle, isOpen, onClose }: Props) {
           </div>
           <div>
             <h1 className="brand-title">CivicScale</h1>
-            <p className="brand-sub">Edmonton Engineering Intelligence</p>
+            <p className="brand-sub">Alberta Engineering Intelligence</p>
           </div>
         </div>
         <button className="sidebar-close" onClick={onClose} aria-label="Close sidebar">
@@ -87,8 +97,9 @@ export default function Sidebar({ layers, onToggle, isOpen, onClose }: Props) {
       <div className="sidebar-content">
         <div className="sidebar-section">
           <p className="sidebar-desc">
-            Visualize Edmonton's infrastructure, environment, and resource data
-            on an interactive map. Toggle layers to explore municipal datasets.
+            Visualize Alberta's flood hazard zones, Edmonton infrastructure,
+            environment, and resource data on an interactive map. Toggle layers
+            to explore provincial and municipal datasets.
           </p>
         </div>
 
@@ -133,13 +144,17 @@ export default function Sidebar({ layers, onToggle, isOpen, onClose }: Props) {
 
         <div className="sidebar-section sidebar-footer">
           <p>
-            Data sourced from{" "}
-            <a
-              href="https://data.edmonton.ca"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              City of Edmonton Open Data Portal
+            Data:{" "}
+            <a href="https://api.weather.gc.ca" target="_blank" rel="noopener noreferrer">
+              ECCC
+            </a>
+            {" / "}
+            <a href="https://floods.alberta.ca" target="_blank" rel="noopener noreferrer">
+              AB Flood Hazard
+            </a>
+            {" / "}
+            <a href="https://data.edmonton.ca" target="_blank" rel="noopener noreferrer">
+              Edmonton Open Data
             </a>
           </p>
           <p className="footer-credit">HackED 2026 - University of Alberta</p>

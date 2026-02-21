@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import type { LatLngBounds } from "leaflet";
 import type { LayerConfig, MapLayer } from "../types";
 import { LAYER_CONFIGS } from "../config/layers";
 
@@ -6,18 +7,15 @@ function extractGeometry(
   item: Record<string, unknown>,
   config: LayerConfig
 ): GeoJSON.Geometry | null {
-  // Polygon layers: geometry is in the "geometry" field
   if (config.type === "polygon" && item.geometry) {
     return item.geometry as GeoJSON.Geometry;
   }
 
-  // GeoJSON layers: geometry in "the_geom" or custom geomField
   if (config.type === "geojson") {
     const field = config.geomField ?? "the_geom";
     if (item[field]) return item[field] as GeoJSON.Geometry;
   }
 
-  // Point layers with a geometry object field (e.g. "point", "geometry", "geometry_point")
   if (config.latField) {
     const geom = item[config.latField] as
       | { type: string; coordinates: number[] }
@@ -27,7 +25,6 @@ function extractGeometry(
     }
   }
 
-  // Point layers: try geometry_point field first
   if (item.geometry_point) {
     const gp = item.geometry_point as
       | { type: string; coordinates: number[] }
@@ -37,12 +34,10 @@ function extractGeometry(
     }
   }
 
-  // Point layers: fallback to lat/lng fields
   if (config.type === "point") {
     const lat = parseFloat(String(item.latitude ?? ""));
     const lng = parseFloat(String(item.longitude ?? ""));
     if (!isNaN(lat) && !isNaN(lng)) {
-      // Guard against swapped lat/lng (Edmonton is ~53N, ~-113W)
       if (Math.abs(lat) > 90 && Math.abs(lng) < 90) {
         return { type: "Point", coordinates: [lat, lng] };
       }
@@ -86,6 +81,34 @@ function toGeoJSON(
   return { type: "FeatureCollection", features };
 }
 
+function buildArcGISUrl(
+  baseEndpoint: string,
+  bounds: LatLngBounds,
+  zoom: number
+): string {
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+  const bbox = `${sw.lng},${sw.lat},${ne.lng},${ne.lat}`;
+
+  // Simplify geometry based on zoom — fewer vertices at wider zooms
+  const offset = 360 / (256 * Math.pow(2, zoom)) * 2;
+
+  const params = new URLSearchParams({
+    where: "1=1",
+    outFields: "*",
+    outSR: "4326",
+    f: "geojson",
+    resultRecordCount: "500",
+    geometry: bbox,
+    geometryType: "esriGeometryEnvelope",
+    inSR: "4326",
+    spatialRel: "esriSpatialRelIntersects",
+    maxAllowableOffset: offset.toFixed(6),
+  });
+
+  return `${baseEndpoint}/query?${params.toString()}`;
+}
+
 export function useMapData() {
   const [layers, setLayers] = useState<Record<string, MapLayer>>(() => {
     const initial: Record<string, MapLayer> = {};
@@ -101,33 +124,72 @@ export function useMapData() {
     return initial;
   });
 
-  const fetchLayer = useCallback(async (config: LayerConfig) => {
-    setLayers((prev) => ({
-      ...prev,
-      [config.id]: { ...prev[config.id], loading: true, error: null },
-    }));
+  const boundsRef = useRef<LatLngBounds | null>(null);
+  const zoomRef = useRef<number>(6);
+  const abortRef = useRef<Record<string, AbortController>>({});
 
-    try {
-      const res = await fetch(config.endpoint);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const raw = await res.json();
-      const data = toGeoJSON(raw, config);
+  const fetchLayer = useCallback(
+    async (config: LayerConfig, bounds?: LatLngBounds, zoom?: number) => {
+      // Cancel any in-flight request for this layer
+      abortRef.current[config.id]?.abort();
+      const controller = new AbortController();
+      abortRef.current[config.id] = controller;
 
       setLayers((prev) => ({
         ...prev,
-        [config.id]: { ...prev[config.id], data, loading: false },
+        [config.id]: { ...prev[config.id], loading: true, error: null },
       }));
-    } catch (err) {
-      setLayers((prev) => ({
-        ...prev,
-        [config.id]: {
-          ...prev[config.id],
-          loading: false,
-          error: err instanceof Error ? err.message : "Failed to load",
-        },
-      }));
-    }
-  }, []);
+
+      try {
+        let url: string;
+
+        if (config.source === "arcgis") {
+          const b = bounds ?? boundsRef.current;
+          const z = zoom ?? zoomRef.current;
+          if (!b) {
+            setLayers((prev) => ({
+              ...prev,
+              [config.id]: { ...prev[config.id], loading: false },
+            }));
+            return;
+          }
+          url = buildArcGISUrl(config.endpoint, b, z);
+        } else {
+          url = config.endpoint;
+        }
+
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const raw = await res.json();
+
+        let data: GeoJSON.FeatureCollection;
+        if (
+          (config.source === "arcgis" || config.source === "geojson") &&
+          raw.type === "FeatureCollection"
+        ) {
+          data = raw as GeoJSON.FeatureCollection;
+        } else {
+          data = toGeoJSON(raw, config);
+        }
+
+        setLayers((prev) => ({
+          ...prev,
+          [config.id]: { ...prev[config.id], data, loading: false },
+        }));
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        setLayers((prev) => ({
+          ...prev,
+          [config.id]: {
+            ...prev[config.id],
+            loading: false,
+            error: err instanceof Error ? err.message : "Failed to load",
+          },
+        }));
+      }
+    },
+    []
+  );
 
   const toggleLayer = useCallback(
     (layerId: string) => {
@@ -158,5 +220,27 @@ export function useMapData() {
     }
   }, [fetchLayer]);
 
-  return { layers, toggleLayer, loadVisibleLayers, fetchLayer };
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const onMapMove = useCallback(
+    (bounds: LatLngBounds, zoom: number) => {
+      boundsRef.current = bounds;
+      zoomRef.current = zoom;
+
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        setLayers((prev) => {
+          for (const layer of Object.values(prev)) {
+            if (layer.visible && layer.config.source === "arcgis") {
+              fetchLayer(layer.config, bounds, zoom);
+            }
+          }
+          return prev;
+        });
+      }, 400);
+    },
+    [fetchLayer]
+  );
+
+  return { layers, toggleLayer, loadVisibleLayers, fetchLayer, onMapMove };
 }
