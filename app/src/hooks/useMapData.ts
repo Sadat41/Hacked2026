@@ -56,6 +56,8 @@ const SKIP_KEYS = new Set([
   "location",
   "geocoded_column",
   "point",
+  "point_location",
+  "multipolygon",
 ]);
 
 function toGeoJSON(
@@ -98,7 +100,7 @@ function buildArcGISUrl(
     outFields: "*",
     outSR: "4326",
     f: "geojson",
-    resultRecordCount: "500",
+    resultRecordCount: "2000",
     geometry: bbox,
     geometryType: "esriGeometryEnvelope",
     inSR: "4326",

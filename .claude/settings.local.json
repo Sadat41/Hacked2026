@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:rivers.alberta.ca)",
+      "WebFetch(domain:api.weather.gc.ca)"
+    ]
+  }
+}
