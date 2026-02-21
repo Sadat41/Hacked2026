@@ -1997,6 +1997,431 @@
   color: var(--hg-green-dim);
 }
 
+/* ===== Drainage Calculator / Engineering Analysis ===== */
+.dc {
+  padding: 0;
+}
+
+.dc-empty {
+  padding: 16px 20px;
+  color: var(--hg-green-muted);
+  font-size: 12px;
+}
+
+.dc-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--hg-border);
+}
+
+.dc-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hg-green);
+  margin: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: var(--hg-glow-sm);
+}
+
+.dc-subtitle {
+  display: block;
+  font-size: 10px;
+  color: var(--hg-green-muted);
+  margin-top: 3px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dc-section {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--hg-border);
+}
+
+.dc-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--hg-green-dim);
+  margin: 0 0 10px;
+}
+
+.dc-note {
+  font-size: 10px;
+  color: var(--hg-green-muted);
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.dc-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.dc-stat {
+  background: var(--hg-panel);
+  border: 1px solid var(--hg-border);
+  border-radius: 2px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+
+.dc-stat.highlight {
+  border-color: var(--hg-green);
+  background: var(--hg-green-faint);
+}
+
+.dc-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hg-green);
+  text-shadow: var(--hg-glow-sm);
+}
+
+.dc-stat-label {
+  font-size: 9px;
+  color: var(--hg-green-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Controls */
+.dc-control-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.dc-control-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--hg-green-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.dc-range {
+  width: 80px;
+  accent-color: var(--hg-green);
+  cursor: pointer;
+}
+
+.dc-range-val {
+  color: var(--hg-green);
+  font-weight: 600;
+  min-width: 28px;
+}
+
+.dc-select {
+  padding: 4px 8px;
+  border-radius: 2px;
+  border: 1px solid var(--hg-border);
+  background: var(--hg-panel);
+  color: var(--hg-green);
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.dc-select:focus {
+  border-color: var(--hg-green);
+  box-shadow: var(--hg-glow-sm);
+}
+
+.dc-soil-desc {
+  font-size: 10px;
+  color: var(--hg-green-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.dc-soil-desc strong {
+  color: var(--hg-green);
+}
+
+/* Design storms table */
+.dc-table-wrap {
+  overflow-x: auto;
+}
+
+.dc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.dc-table th {
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--hg-green-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--hg-border);
+  white-space: nowrap;
+}
+
+.dc-table td {
+  padding: 5px 8px;
+  color: var(--hg-green-dim);
+  border-bottom: 1px solid rgba(57, 211, 83, 0.06);
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dc-row-highlight td {
+  color: var(--hg-green);
+  font-weight: 600;
+  background: var(--hg-green-faint);
+}
+
+/* LID Simulator */
+.dc-lid-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.dc-lid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--hg-border);
+  border-radius: 2px;
+  background: var(--hg-panel);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dc-lid-card:hover {
+  border-color: var(--hg-green-dim);
+  background: var(--hg-green-faint);
+}
+
+.dc-lid-card.on {
+  border-color: var(--hg-green);
+  background: var(--hg-green-faint);
+  box-shadow: var(--hg-glow-sm);
+}
+
+.dc-lid-card input[type="checkbox"] {
+  display: none;
+}
+
+.dc-lid-icon {
+  color: var(--hg-green-muted);
+  transition: color 0.15s;
+}
+
+.dc-lid-card.on .dc-lid-icon {
+  color: var(--hg-green);
+}
+
+.dc-lid-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hg-green-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dc-lid-card.on .dc-lid-name {
+  color: var(--hg-green);
+}
+
+.dc-lid-desc {
+  font-size: 9px;
+  color: var(--hg-green-muted);
+  line-height: 1.4;
+}
+
+/* LID Results */
+.dc-lid-results {
+  background: var(--hg-panel);
+  border: 1px solid var(--hg-green);
+  border-radius: 2px;
+  padding: 10px 12px;
+}
+
+.dc-lid-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(57, 211, 83, 0.08);
+}
+
+.dc-lid-result-row:last-child {
+  border-bottom: none;
+}
+
+.dc-lid-result-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hg-green-muted);
+}
+
+.dc-lid-result-value {
+  font-size: 11px;
+  color: var(--hg-green-dim);
+  text-align: right;
+}
+
+.dc-lid-result-value strong {
+  color: var(--hg-green);
+}
+
+.dc-reduction {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #22d3ee;
+  background: rgba(34, 211, 238, 0.1);
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
+/* Design Summary */
+.dc-summary {
+  border-bottom: none;
+}
+
+.dc-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dc-summary-item {
+  background: var(--hg-panel);
+  border: 1px solid var(--hg-border);
+  border-radius: 2px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dc-summary-item.highlight {
+  border-color: var(--hg-green);
+  background: var(--hg-green-faint);
+}
+
+.dc-summary-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--hg-green-muted);
+}
+
+.dc-summary-value {
+  font-size: 12px;
+  color: var(--hg-green);
+  font-weight: 500;
+}
+
+.dc-summary-value.lg {
+  font-size: 18px;
+  font-weight: 700;
+  text-shadow: var(--hg-glow-sm);
+}
+
+.dc-summary-value.sm {
+  font-size: 10px;
+  color: var(--hg-green-dim);
+  line-height: 1.4;
+}
+
+.dc-disclaimer {
+  font-size: 10px;
+  color: var(--hg-green-muted);
+  line-height: 1.6;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--hg-panel);
+  border: 1px solid var(--hg-border);
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+/* ===== Engineering View extras ===== */
+.eng-sidebar {
+  width: 380px;
+  min-width: 380px;
+}
+
+.eng-prop-summary {
+  background: var(--hg-panel);
+  border: 1px solid var(--hg-border);
+  border-radius: 2px;
+  padding: 12px 14px;
+}
+
+.eng-prop-addr {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hg-green);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  text-shadow: var(--hg-glow-sm);
+}
+
+.eng-prop-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.eng-prop-meta span {
+  font-size: 11px;
+  color: var(--hg-green-dim);
+}
+
+.eng-manual-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eng-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eng-field-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--hg-green-muted);
+}
+
+.eng-required {
+  color: var(--hg-error);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .sidebar {
@@ -2031,4 +2456,432 @@
     min-width: unset;
     max-height: 45vh;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   STORM SIMULATION & COST ANALYSIS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Split layout: compact map on top, charts/costs below */
+.sim-split-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Site map panel used inside sim/cost views */
+.site-map-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.site-map-panel.site-map-compact {
+  height: auto;
+  flex-shrink: 0;
+}
+
+.site-map-panel .precip-map-full {
+  height: 100%;
+  width: 100%;
+}
+
+.site-map-compact-container {
+  height: 250px;
+  width: 100%;
+  border-bottom: 1px solid rgba(57, 211, 83, 0.2);
+}
+
+.site-map-compact .basemap-switcher {
+  bottom: 8px;
+  right: 8px;
+}
+
+.sim-charts-area {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: calc(100vh - 44px);
+}
+
+.sim-chart-card {
+  background: rgba(10, 21, 10, 0.85);
+  border: 1px solid rgba(57, 211, 83, 0.15);
+  border-radius: 4px;
+  padding: 14px;
+}
+
+.sim-chart-card h4 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(57, 211, 83, 0.8);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.sim-soil-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sim-soil-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(57, 211, 83, 0.08);
+}
+
+.sim-soil-row span {
+  color: rgba(57, 211, 83, 0.55);
+}
+
+.sim-soil-row strong {
+  color: rgba(57, 211, 83, 0.9);
+  font-family: "Share Tech Mono", monospace;
+}
+
+/* Water balance section */
+.sim-waterbalance {
+  background: rgba(10, 21, 10, 0.85);
+  border: 1px solid rgba(57, 211, 83, 0.15);
+  border-radius: 4px;
+  padding: 14px;
+}
+
+.sim-waterbalance h4 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(57, 211, 83, 0.8);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.sim-wb-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.sim-wb-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(57, 211, 83, 0.06);
+  border: 1px solid rgba(57, 211, 83, 0.15);
+  border-radius: 4px;
+  min-width: 100px;
+}
+
+.sim-wb-label {
+  font-size: 9px;
+  color: rgba(57, 211, 83, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sim-wb-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(57, 211, 83, 0.9);
+  font-family: "Share Tech Mono", monospace;
+}
+
+.sim-wb-op {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(57, 211, 83, 0.5);
+  font-family: "Share Tech Mono", monospace;
+}
+
+/* Cost analysis tables */
+.cost-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.cost-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(57, 211, 83, 0.04);
+  border: 1px solid rgba(57, 211, 83, 0.1);
+  border-radius: 3px;
+}
+
+.cost-summary-item.cost-total {
+  background: rgba(57, 211, 83, 0.12);
+  border-color: rgba(57, 211, 83, 0.3);
+}
+
+.cost-summary-label {
+  font-size: 11px;
+  color: rgba(57, 211, 83, 0.6);
+}
+
+.cost-summary-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(57, 211, 83, 0.95);
+  font-family: "Share Tech Mono", monospace;
+}
+
+.cost-total .cost-summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(57, 211, 83, 0.8);
+}
+
+.cost-total .cost-summary-value {
+  font-size: 18px;
+  color: #39d353;
+}
+
+.cost-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.cost-table th {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(57, 211, 83, 0.25);
+  color: rgba(57, 211, 83, 0.7);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.cost-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(57, 211, 83, 0.07);
+  color: rgba(57, 211, 83, 0.75);
+  font-family: "Share Tech Mono", monospace;
+}
+
+.cost-table tr:hover td {
+  background: rgba(57, 211, 83, 0.04);
+}
+
+.cost-row-header td {
+  font-weight: 700;
+  color: rgba(57, 211, 83, 0.8) !important;
+  padding-top: 10px !important;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  border-bottom-color: rgba(57, 211, 83, 0.2) !important;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.cost-row-total td {
+  font-weight: 700;
+  font-size: 13px;
+  color: #39d353 !important;
+  padding-top: 10px !important;
+  border-top: 2px solid rgba(57, 211, 83, 0.3);
+}
+
+.cost-row-active td {
+  background: rgba(57, 211, 83, 0.1) !important;
+  color: #39d353 !important;
+  font-weight: 700;
+}
+
+.cost-ref-table td:first-child {
+  font-weight: 600;
+}
+
+/* Recharts label styling for pie */
+.recharts-pie-label-text {
+  font-size: 9px !important;
+  fill: rgba(57, 211, 83, 0.7) !important;
+}
+
+/* Theme overrides for dark/accessible */
+[data-ui-theme="dark"] .sim-chart-card,
+[data-ui-theme="dark"] .sim-waterbalance {
+  background: rgba(20, 20, 30, 0.9);
+  border-color: rgba(120, 150, 255, 0.15);
+}
+
+[data-ui-theme="dark"] .sim-chart-card h4,
+[data-ui-theme="dark"] .sim-waterbalance h4 {
+  color: rgba(120, 150, 255, 0.8);
+}
+
+[data-ui-theme="dark"] .cost-table th {
+  color: rgba(120, 150, 255, 0.7);
+  border-bottom-color: rgba(120, 150, 255, 0.25);
+}
+
+[data-ui-theme="dark"] .cost-table td {
+  color: rgba(200, 210, 240, 0.75);
+  border-bottom-color: rgba(120, 150, 255, 0.07);
+}
+
+[data-ui-theme="accessible"] .sim-chart-card,
+[data-ui-theme="accessible"] .sim-waterbalance {
+  background: #fafafa;
+  border-color: #ccc;
+}
+
+[data-ui-theme="accessible"] .sim-chart-card h4,
+[data-ui-theme="accessible"] .sim-waterbalance h4 {
+  color: #222;
+}
+
+[data-ui-theme="accessible"] .cost-table th {
+  color: #333;
+  border-bottom-color: #aaa;
+}
+
+[data-ui-theme="accessible"] .cost-table td {
+  color: #444;
+  border-bottom-color: #ddd;
+}
+
+/* ===== Welcome Modal ===== */
+.welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: welcomeFadeIn 0.3s ease;
+}
+@keyframes welcomeFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.welcome-modal {
+  background: var(--hg-panel);
+  border: 1px solid var(--hg-border-bright);
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 520px;
+  width: 90vw;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), var(--hg-glow-lg);
+  animation: welcomeSlideUp 0.35s ease;
+}
+@keyframes welcomeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.welcome-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.welcome-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--hg-green);
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+.welcome-sub {
+  font-size: 11px;
+  color: var(--hg-green-dim);
+  margin: 2px 0 0;
+}
+.welcome-section {
+  margin-bottom: 18px;
+}
+.welcome-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hg-green-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.welcome-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.welcome-grid-themes {
+  grid-template-columns: repeat(3, 1fr);
+}
+.welcome-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--hg-border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  min-width: 72px;
+}
+.welcome-tile:hover {
+  border-color: var(--hg-green-dim);
+  background: var(--hg-green-faint);
+}
+.welcome-tile.active {
+  border-color: var(--hg-green);
+  background: var(--hg-green-faint);
+  box-shadow: var(--hg-glow-sm);
+}
+.welcome-tile-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--hg-green-dim);
+  text-align: center;
+}
+.welcome-tile.active .welcome-tile-label {
+  color: var(--hg-green);
+}
+.welcome-tile-desc {
+  font-size: 9px;
+  color: var(--hg-green-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+.welcome-theme-preview {
+  width: 64px;
+  height: 40px;
+  border-radius: 4px;
+  border: 1px solid var(--hg-border);
+}
+.welcome-go-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 0;
+  margin-top: 8px;
+  background: var(--hg-green);
+  color: var(--hg-bg);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.welcome-go-btn:hover {
+  opacity: 0.85;
 }

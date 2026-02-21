@@ -330,6 +330,7 @@ export default function PropertyToolsView() {
                 </div>
               </div>
             </div>
+
           </div>
         )}
 

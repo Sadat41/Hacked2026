@@ -3,13 +3,18 @@ import MapView from "./components/MapView";
 import Sidebar from "./components/Sidebar";
 import PropertyToolsView from "./components/PropertyToolsView";
 import { useMapData } from "./hooks/useMapData";
+import { BASEMAPS, type BasemapKey } from "./config/basemaps";
 import logoSvg from "./assets/logo.svg";
 import "./App.css";
 
 const PrecipitationView = lazy(() => import("./components/PrecipitationView"));
 const HydrometricView = lazy(() => import("./components/HydrometricView"));
-type ActiveView = "layers" | "flood" | "precipitation" | "hydrometric" | "property";
+const EngineeringView = lazy(() => import("./components/EngineeringView"));
+const StormSimulationView = lazy(() => import("./components/StormSimulationView"));
+const CostAnalysisView = lazy(() => import("./components/CostAnalysisView"));
+type ActiveView = "layers" | "flood" | "precipitation" | "hydrometric" | "property" | "engineering" | "simulation" | "cost";
 type FloodSubView = "flood" | "hydrometric" | "precipitation";
+type EngSubView = "engineering" | "simulation" | "cost";
 type UiTheme = "terminal" | "dark" | "accessible";
 
 const FLOOD_SUB_OPTIONS: { key: FloodSubView; label: string }[] = [
@@ -18,18 +23,60 @@ const FLOOD_SUB_OPTIONS: { key: FloodSubView; label: string }[] = [
   { key: "precipitation", label: "Precipitation Explorer" },
 ];
 
+const ENG_SUB_OPTIONS: { key: EngSubView; label: string }[] = [
+  { key: "engineering", label: "Drainage Design" },
+  { key: "simulation", label: "Storm Simulation" },
+  { key: "cost", label: "Cost Analysis" },
+];
+
 const LS_THEME_KEY = "hydrogrid-ui-theme";
+const LS_WELCOME_KEY = "hydrogrid-welcome-done";
+
+const UI_THEME_OPTIONS: { key: UiTheme; label: string; desc: string; preview: string }[] = [
+  { key: "terminal", label: "Terminal", desc: "Green-on-black hacker style", preview: "linear-gradient(135deg, #060d06, #0a150a)" },
+  { key: "dark", label: "Dark", desc: "Modern dark blue UI", preview: "linear-gradient(135deg, #0f172a, #1e293b)" },
+  { key: "accessible", label: "Accessible", desc: "Light, high-contrast (WCAG AAA)", preview: "linear-gradient(135deg, #f5f7fa, #ffffff)" },
+];
 
 export default function App() {
   const { layers, toggleLayer, loadVisibleLayers, onMapMove } = useMapData();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>("layers");
   const [floodDropdownOpen, setFloodDropdownOpen] = useState(false);
+  const [engDropdownOpen, setEngDropdownOpen] = useState(false);
   const [uiTheme, setUiTheme] = useState<UiTheme>(() => {
     try { return (localStorage.getItem(LS_THEME_KEY) as UiTheme) || "terminal"; }
     catch { return "terminal"; }
   });
   const floodDropdownRef = useRef<HTMLDivElement>(null);
+  const engDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try { return !localStorage.getItem(LS_WELCOME_KEY); }
+    catch { return true; }
+  });
+  const [welcomeMap, setWelcomeMap] = useState<BasemapKey>("dark");
+  const [welcomeTheme, setWelcomeTheme] = useState<UiTheme>("terminal");
+  const [mapKey, setMapKey] = useState(0);
+
+  // Suppress the old basemap first-visit prompt immediately
+  useEffect(() => {
+    if (showWelcome) {
+      try { localStorage.setItem("hydrogrid-basemap-seen", "1"); } catch { /* */ }
+    }
+  }, [showWelcome]);
+
+  function finishWelcome() {
+    setUiTheme(welcomeTheme);
+    try {
+      localStorage.setItem(LS_THEME_KEY, welcomeTheme);
+      localStorage.setItem("hydrogrid-basemap", welcomeMap);
+      localStorage.setItem("hydrogrid-basemap-seen", "1");
+      localStorage.setItem(LS_WELCOME_KEY, "1");
+    } catch { /* ignore */ }
+    setShowWelcome(false);
+    setMapKey(k => k + 1);
+  }
 
   const THEME_CYCLE: UiTheme[] = ["terminal", "dark", "accessible"];
   const THEME_LABELS: Record<UiTheme, string> = { terminal: "Terminal", dark: "Dark", accessible: "Accessible" };
@@ -50,6 +97,9 @@ export default function App() {
       if (floodDropdownRef.current && !floodDropdownRef.current.contains(e.target as Node)) {
         setFloodDropdownOpen(false);
       }
+      if (engDropdownRef.current && !engDropdownRef.current.contains(e.target as Node)) {
+        setEngDropdownOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -58,13 +108,62 @@ export default function App() {
   const isFloodView = activeView === "flood" || activeView === "hydrometric" || activeView === "precipitation";
   const activeFloodLabel = FLOOD_SUB_OPTIONS.find((o) => o.key === activeView)?.label ?? "Flood Hazard";
 
+  const isEngView = activeView === "engineering" || activeView === "simulation" || activeView === "cost";
+  const activeEngLabel = ENG_SUB_OPTIONS.find((o) => o.key === activeView)?.label ?? "Site Analysis";
+
   function selectFloodSub(key: FloodSubView) {
     setActiveView(key);
     setFloodDropdownOpen(false);
   }
 
+  function selectEngSub(key: EngSubView) {
+    setActiveView(key);
+    setEngDropdownOpen(false);
+  }
+
   return (
     <div className="app" data-ui-theme={uiTheme}>
+      {showWelcome && (
+        <div className="welcome-overlay">
+          <div className="welcome-modal">
+            <div className="welcome-header">
+              <img src={logoSvg} alt="" width="28" height="28" />
+              <div>
+                <h2 className="welcome-title">Welcome to HydroGrid</h2>
+                <p className="welcome-sub">Edmonton Hydrology &amp; Infrastructure Platform</p>
+              </div>
+            </div>
+
+            <div className="welcome-section">
+              <label className="welcome-section-label">Map Style</label>
+              <div className="welcome-grid">
+                {(Object.keys(BASEMAPS) as BasemapKey[]).map((key) => (
+                  <button key={key} className={`welcome-tile ${welcomeMap === key ? "active" : ""}`} onClick={() => setWelcomeMap(key)}>
+                    <span className="basemap-first-preview" data-basemap={key} />
+                    <span className="welcome-tile-label">{BASEMAPS[key].label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="welcome-section">
+              <label className="welcome-section-label">UI Theme</label>
+              <div className="welcome-grid welcome-grid-themes">
+                {UI_THEME_OPTIONS.map((t) => (
+                  <button key={t.key} className={`welcome-tile ${welcomeTheme === t.key ? "active" : ""}`} onClick={() => setWelcomeTheme(t.key)}>
+                    <span className="welcome-theme-preview" style={{ background: t.preview }} />
+                    <span className="welcome-tile-label">{t.label}</span>
+                    <span className="welcome-tile-desc">{t.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button className="welcome-go-btn" onClick={finishWelcome}>Get Started</button>
+          </div>
+        </div>
+      )}
+
       <nav className="tab-bar">
         <div className="tab-brand">
           <img src={logoSvg} alt="" width="22" height="22" className="tab-logo" />
@@ -78,6 +177,7 @@ export default function App() {
             onClick={() => {
               setActiveView("layers");
               setFloodDropdownOpen(false);
+              setEngDropdownOpen(false);
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -93,11 +193,11 @@ export default function App() {
             <button
               className={`tab-btn ${isFloodView ? "active" : ""}`}
               onClick={() => {
+                setEngDropdownOpen(false);
                 if (!isFloodView) {
                   setActiveView("flood");
-                } else {
-                  setFloodDropdownOpen((p) => !p);
                 }
+                setFloodDropdownOpen((p) => !p);
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -135,6 +235,7 @@ export default function App() {
             onClick={() => {
               setActiveView("property");
               setFloodDropdownOpen(false);
+              setEngDropdownOpen(false);
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -149,6 +250,47 @@ export default function App() {
             </svg>
             Property Lookup
           </button>
+
+          {/* Site Analysis dropdown */}
+          <div className="tab-dropdown-wrap" ref={engDropdownRef}>
+            <button
+              className={`tab-btn ${isEngView ? "active" : ""}`}
+              onClick={() => {
+                setFloodDropdownOpen(false);
+                if (!isEngView) {
+                  setActiveView("engineering");
+                }
+                setEngDropdownOpen((p) => !p);
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 16c1.5-1.5 3-2 4.5-2s3 .5 4.5 2c1.5 1.5 3 2 4.5 2s3-.5 4.5-2" />
+                <path d="M2 12c1.5-1.5 3-2 4.5-2s3 .5 4.5 2c1.5 1.5 3 2 4.5 2s3-.5 4.5-2" />
+                <path d="M12 2v6" />
+                <path d="M9 5l3-3 3 3" />
+              </svg>
+              {isEngView ? activeEngLabel : "Site Analysis"}
+              <svg
+                width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                className={`tab-chevron ${engDropdownOpen ? "open" : ""}`}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            {engDropdownOpen && (
+              <div className="tab-dropdown">
+                {ENG_SUB_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    className={`tab-dropdown-item ${activeView === opt.key ? "active" : ""}`}
+                    onClick={() => selectEngSub(opt.key)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button className="tab-theme-btn" onClick={cycleUiTheme} title="Cycle theme">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -181,7 +323,7 @@ export default function App() {
                 </svg>
               </button>
             )}
-            <MapView layers={layers} onMapMove={onMapMove} sidebarOpen={sidebarOpen} />
+            <MapView key={mapKey} layers={layers} onMapMove={onMapMove} sidebarOpen={sidebarOpen} />
           </>
         )}
         {activeView === "flood" && (
@@ -204,7 +346,7 @@ export default function App() {
                 </svg>
               </button>
             )}
-            <MapView layers={layers} onMapMove={onMapMove} sidebarOpen={sidebarOpen} />
+            <MapView key={mapKey} layers={layers} onMapMove={onMapMove} sidebarOpen={sidebarOpen} />
           </>
         )}
         {activeView === "hydrometric" && (
@@ -218,6 +360,21 @@ export default function App() {
           </Suspense>
         )}
         {activeView === "property" && <PropertyToolsView />}
+        {activeView === "engineering" && (
+          <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+            <EngineeringView />
+          </Suspense>
+        )}
+        {activeView === "simulation" && (
+          <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+            <StormSimulationView />
+          </Suspense>
+        )}
+        {activeView === "cost" && (
+          <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+            <CostAnalysisView />
+          </Suspense>
+        )}
       </div>
     </div>
   );
