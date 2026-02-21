@@ -1,6 +1,25 @@
 import type { LayerConfig } from "../types";
 
 const EDMONTON_API = "https://data.edmonton.ca/resource";
+const WEATHER_API =
+  import.meta.env.DEV
+    ? "/weatherapi"
+    : "https://api.weather.gc.ca";
+
+// Dynamic 7-day window for daily precipitation queries
+const today = new Date();
+const weekAgo = new Date(today);
+weekAgo.setDate(today.getDate() - 7);
+const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+const DAILY_DATE_RANGE = `${fmtDate(weekAgo)}/${fmtDate(today)}`;
+
+const ARCGIS_ORIGIN =
+  import.meta.env.DEV
+    ? "/arcgis"
+    : "https://services.arcgis.com";
+const AB_FLOOD_BASE =
+  `${ARCGIS_ORIGIN}/wjcPoefzjpzCgffS/arcgis/rest/services/AlbertaFloodMapping_gdb/FeatureServer`;
+const abFloodLayer = (layerId: number) => `${AB_FLOOD_BASE}/${layerId}`;
 
 export const LAYER_CONFIGS: LayerConfig[] = [
   // ─── Infrastructure ───────────────────────────────────────────────
@@ -276,12 +295,336 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     ],
     enabled: false,
   },
+
+  // ─── Alberta Climate & Water (Province-wide, Environment Canada) ─
+  {
+    id: "climate-stations",
+    name: "Climate Stations (Alberta)",
+    description:
+      "Active Environment Canada weather stations across Alberta. Shows station location, type, and data availability.",
+    category: "environment",
+    endpoint: `${WEATHER_API}/collections/climate-stations/items?f=json&limit=500&PROVINCE_CODE=AB`,
+    source: "geojson",
+    type: "point",
+    style: {
+      color: "#fbbf24",
+      weight: 1,
+      opacity: 0.9,
+      fillColor: "#f59e0b",
+      fillOpacity: 0.7,
+    },
+    pointColor: "#fbbf24",
+    pointRadius: 6,
+    maxFeatures: 500,
+    popupFields: [
+      { key: "STATION_NAME", label: "Station" },
+      { key: "CLIMATE_IDENTIFIER", label: "Climate ID" },
+      { key: "STATION_TYPE", label: "Type" },
+      { key: "ELEVATION", label: "Elevation (m)" },
+      { key: "FIRST_DATE", label: "Data Since" },
+      { key: "LAST_DATE", label: "Latest Data" },
+      { key: "HAS_NORMALS_DATA", label: "Has Normals" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "precip-daily",
+    name: "Daily Precipitation (Alberta)",
+    description:
+      "Recent daily precipitation, temperature, and snowfall observations from Alberta weather stations (last 7 days).",
+    category: "environment",
+    endpoint: `${WEATHER_API}/collections/climate-daily/items?f=json&limit=500&PROVINCE_CODE=AB&sortby=-LOCAL_DATE&datetime=${DAILY_DATE_RANGE}`,
+    source: "geojson",
+    type: "point",
+    style: {
+      color: "#38bdf8",
+      weight: 1,
+      opacity: 0.9,
+      fillColor: "#0ea5e9",
+      fillOpacity: 0.8,
+    },
+    pointColor: "#38bdf8",
+    pointRadius: 7,
+    maxFeatures: 500,
+    popupFields: [
+      { key: "STATION_NAME", label: "Station" },
+      { key: "LOCAL_DATE", label: "Date" },
+      { key: "TOTAL_PRECIPITATION", label: "Precipitation (mm)", format: "number" },
+      { key: "TOTAL_RAIN", label: "Rain (mm)", format: "number" },
+      { key: "TOTAL_SNOW", label: "Snow (cm)", format: "number" },
+      { key: "SNOW_ON_GROUND", label: "Snow Depth (cm)", format: "number" },
+      { key: "MEAN_TEMPERATURE", label: "Mean Temp (°C)", format: "number" },
+      { key: "MIN_TEMPERATURE", label: "Min Temp (°C)", format: "number" },
+      { key: "MAX_TEMPERATURE", label: "Max Temp (°C)", format: "number" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "precip-normals",
+    name: "Precipitation Normals (30-yr Avg)",
+    description:
+      "Annual total precipitation depth (mm) averaged over 1981-2010 at each station. Baseline for engineering calculations.",
+    category: "environment",
+    endpoint: `${WEATHER_API}/collections/climate-normals/items?f=json&limit=500&PROVINCE_CODE=AB&NORMAL_ID=56&MONTH=13`,
+    source: "geojson",
+    type: "point",
+    style: {
+      color: "#818cf8",
+      weight: 1,
+      opacity: 0.9,
+      fillColor: "#6366f1",
+      fillOpacity: 0.8,
+    },
+    pointColor: "#818cf8",
+    pointRadius: 8,
+    maxFeatures: 500,
+    popupFields: [
+      { key: "STATION_NAME", label: "Station" },
+      { key: "CLIMATE_IDENTIFIER", label: "Climate ID" },
+      { key: "VALUE", label: "Annual Precip (mm)", format: "number" },
+      { key: "PERIOD_BEGIN", label: "Period Start", format: "year" },
+      { key: "PERIOD_END", label: "Period End", format: "year" },
+      { key: "YEAR_COUNT_NORMAL_PERIOD", label: "Years of Data", format: "number" },
+      { key: "PERCENT_OF_POSSIBLE_OBS", label: "Data Coverage (%)", format: "number" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "precip-monthly",
+    name: "Monthly Precipitation Summary",
+    description:
+      "Monthly precipitation totals, snowfall, and temperature summaries from Alberta stations. Latest available month.",
+    category: "environment",
+    endpoint: `${WEATHER_API}/collections/climate-monthly/items?f=json&limit=500&PROVINCE_CODE=AB&sortby=-LOCAL_DATE`,
+    source: "geojson",
+    type: "point",
+    style: {
+      color: "#c084fc",
+      weight: 1,
+      opacity: 0.9,
+      fillColor: "#a855f7",
+      fillOpacity: 0.7,
+    },
+    pointColor: "#c084fc",
+    pointRadius: 7,
+    maxFeatures: 500,
+    popupFields: [
+      { key: "STATION_NAME", label: "Station" },
+      { key: "LOCAL_DATE", label: "Month" },
+      { key: "TOTAL_PRECIPITATION", label: "Total Precip (mm)", format: "number" },
+      { key: "NORMAL_PRECIPITATION", label: "Normal Precip (mm)", format: "number" },
+      { key: "TOTAL_SNOWFALL", label: "Snowfall (cm)", format: "number" },
+      { key: "SNOW_ON_GROUND_LAST_DAY", label: "Snow Depth Last Day (cm)", format: "number" },
+      { key: "DAYS_WITH_PRECIP_GE_1MM", label: "Days >= 1mm Precip", format: "number" },
+      { key: "MEAN_TEMPERATURE", label: "Mean Temp (°C)", format: "number" },
+      { key: "HEATING_DEGREE_DAYS", label: "Heating Degree Days", format: "number" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "snowfall-normals",
+    name: "Snowfall Normals (30-yr Avg)",
+    description:
+      "Annual total snowfall depth (cm) averaged over 1981-2010. Critical for snowmelt runoff and spring flood modeling.",
+    category: "environment",
+    endpoint: `${WEATHER_API}/collections/climate-normals/items?f=json&limit=500&PROVINCE_CODE=AB&NORMAL_ID=54&MONTH=13`,
+    source: "geojson",
+    type: "point",
+    style: {
+      color: "#e2e8f0",
+      weight: 1,
+      opacity: 0.9,
+      fillColor: "#cbd5e1",
+      fillOpacity: 0.7,
+    },
+    pointColor: "#e2e8f0",
+    pointRadius: 7,
+    maxFeatures: 500,
+    popupFields: [
+      { key: "STATION_NAME", label: "Station" },
+      { key: "CLIMATE_IDENTIFIER", label: "Climate ID" },
+      { key: "VALUE", label: "Annual Snowfall (cm)", format: "number" },
+      { key: "PERIOD_BEGIN", label: "Period Start", format: "year" },
+      { key: "PERIOD_END", label: "Period End", format: "year" },
+      { key: "YEAR_COUNT_NORMAL_PERIOD", label: "Years of Data", format: "number" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "hydro-stations",
+    name: "Hydrometric Stations (Alberta)",
+    description:
+      "River and lake water level/flow monitoring stations across Alberta. Real-time and historical hydrometric data.",
+    category: "environment",
+    endpoint: `${WEATHER_API}/collections/hydrometric-stations/items?f=json&limit=500&PROV_TERR_STATE_LOC=AB`,
+    source: "geojson",
+    type: "point",
+    style: {
+      color: "#2dd4bf",
+      weight: 1,
+      opacity: 0.9,
+      fillColor: "#14b8a6",
+      fillOpacity: 0.7,
+    },
+    pointColor: "#2dd4bf",
+    pointRadius: 5,
+    maxFeatures: 500,
+    popupFields: [
+      { key: "STATION_NAME", label: "Station" },
+      { key: "STATION_NUMBER", label: "Station #" },
+      { key: "DRAINAGE_AREA_GROSS", label: "Drainage Area (km²)", format: "number" },
+      { key: "STATION_STATUS", label: "Status" },
+      { key: "STATION_OPERATION_SCHEDULE", label: "Operation" },
+      { key: "DATA_TYPE", label: "Data Type" },
+      { key: "STATION_CONTRIBUTOR", label: "Contributor" },
+    ],
+    enabled: false,
+  },
+
+  // ─── Alberta Flood Hazard (Province-wide) ───────────────────────
+  {
+    id: "flood-hazard",
+    name: "Flood Hazard Areas",
+    description:
+      "Provincial flood hazard zones showing floodway and flood fringe areas for the 1:100 design flood across Alberta.",
+    category: "flood",
+    endpoint: abFloodLayer(0),
+    source: "arcgis",
+    type: "polygon",
+    style: {
+      color: "#f43f5e",
+      weight: 1.5,
+      opacity: 0.8,
+      fillColor: "#e11d48",
+      fillOpacity: 0.3,
+    },
+    maxFeatures: 2000,
+    popupFields: [
+      { key: "RiverName", label: "River" },
+      { key: "StudyName", label: "Study" },
+      { key: "FloodMechanism", label: "Mechanism" },
+      { key: "Flow_Regime", label: "Flow Regime" },
+      { key: "Two_Zone", label: "Two Zone" },
+      { key: "Multi_Zone", label: "Multi Zone" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "flood-100yr",
+    name: "100-Year Flood Inundation",
+    description:
+      "Areas at risk during a 1:100 year open water flood (1% chance per year). The design standard for Alberta communities.",
+    category: "flood",
+    endpoint: abFloodLayer(11),
+    source: "arcgis",
+    type: "polygon",
+    style: {
+      color: "#3b82f6",
+      weight: 1.5,
+      opacity: 0.8,
+      fillColor: "#2563eb",
+      fillOpacity: 0.3,
+    },
+    maxFeatures: 2000,
+    popupFields: [
+      { key: "RiverName", label: "River" },
+      { key: "StudyName", label: "Study" },
+      { key: "FloodReturnPeriod", label: "Return Period (yrs)", format: "number" },
+      { key: "FloodProbability", label: "Annual Probability" },
+      { key: "InundationZone", label: "Zone" },
+      { key: "FloodMechanism", label: "Mechanism" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "flood-200yr",
+    name: "200-Year Flood Inundation",
+    description:
+      "Areas at risk during a 1:200 year open water flood (0.5% chance per year). Wider extent than the 100-year scenario.",
+    category: "flood",
+    endpoint: abFloodLayer(12),
+    source: "arcgis",
+    type: "polygon",
+    style: {
+      color: "#8b5cf6",
+      weight: 1.5,
+      opacity: 0.8,
+      fillColor: "#7c3aed",
+      fillOpacity: 0.25,
+    },
+    maxFeatures: 2000,
+    popupFields: [
+      { key: "RiverName", label: "River" },
+      { key: "StudyName", label: "Study" },
+      { key: "FloodReturnPeriod", label: "Return Period (yrs)", format: "number" },
+      { key: "FloodProbability", label: "Annual Probability" },
+      { key: "InundationZone", label: "Zone" },
+      { key: "FloodMechanism", label: "Mechanism" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "flood-icejam-100yr",
+    name: "Ice Jam Flood (100-Year)",
+    description:
+      "Flood zones from 1:100 year ice jam events. Ice jams cause unique flooding patterns along Alberta rivers in spring.",
+    category: "flood",
+    endpoint: abFloodLayer(2),
+    source: "arcgis",
+    type: "polygon",
+    style: {
+      color: "#06b6d4",
+      weight: 1.5,
+      opacity: 0.8,
+      fillColor: "#0891b2",
+      fillOpacity: 0.3,
+    },
+    maxFeatures: 2000,
+    popupFields: [
+      { key: "RiverName", label: "River" },
+      { key: "StudyName", label: "Study" },
+      { key: "FloodReturnPeriod", label: "Return Period (yrs)", format: "number" },
+      { key: "FloodProbability", label: "Annual Probability" },
+      { key: "InundationZone", label: "Zone" },
+      { key: "FloodMechanism", label: "Mechanism" },
+    ],
+    enabled: false,
+  },
+  {
+    id: "flood-500yr",
+    name: "500-Year Flood Inundation",
+    description:
+      "Extreme scenario — areas at risk during a 1:500 year flood (0.2% chance per year). Shows worst-case planning extent.",
+    category: "flood",
+    endpoint: abFloodLayer(14),
+    source: "arcgis",
+    type: "polygon",
+    style: {
+      color: "#ec4899",
+      weight: 1.5,
+      opacity: 0.8,
+      fillColor: "#db2777",
+      fillOpacity: 0.2,
+    },
+    maxFeatures: 2000,
+    popupFields: [
+      { key: "RiverName", label: "River" },
+      { key: "StudyName", label: "Study" },
+      { key: "FloodReturnPeriod", label: "Return Period (yrs)", format: "number" },
+      { key: "FloodProbability", label: "Annual Probability" },
+      { key: "InundationZone", label: "Zone" },
+      { key: "FloodMechanism", label: "Mechanism" },
+    ],
+    enabled: false,
+  },
 ];
 
+export const ALBERTA_CENTER: [number, number] = [53.9333, -116.5765];
 export const EDMONTON_CENTER: [number, number] = [53.5461, -113.4938];
-export const DEFAULT_ZOOM = 11;
+export const DEFAULT_ZOOM = 6;
 
 export const CATEGORY_META = {
+  flood: { label: "Alberta Flood Hazard", icon: "flood" },
   infrastructure: { label: "Infrastructure", icon: "building" },
   environment: { label: "Environment", icon: "leaf" },
   energy: { label: "Energy & Mining", icon: "bolt" },
