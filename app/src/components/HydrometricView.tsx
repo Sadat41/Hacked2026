@@ -373,8 +373,8 @@ export default function HydrometricView() {
                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} unit=" m³/s" />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(val: number | undefined, name: string) => [
-                    `${val?.toFixed(1) ?? "N/A"} ${name.includes("Level") ? "m" : "m³/s"}`,
+                  formatter={(val: number | undefined, name?: string) => [
+                    `${val?.toFixed(1) ?? "N/A"} ${name?.includes("Level") ? "m" : "m³/s"}`,
                   ]}
                 />
                 <Bar dataKey="peakDischarge" fill="#f59e0b" name="Peak Discharge" radius={[2, 2, 0, 0]} />
