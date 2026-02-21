@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import MapView from "./components/MapView";
 import Sidebar from "./components/Sidebar";
 import PropertyToolsView from "./components/PropertyToolsView";
+const LandingPage = lazy(() => import("./components/LandingPage"));
 import { useMapData } from "./hooks/useMapData";
 import { BASEMAPS, type BasemapKey } from "./config/basemaps";
 import logoSvg from "./assets/logo.svg";
@@ -51,6 +52,7 @@ export default function App() {
   const floodDropdownRef = useRef<HTMLDivElement>(null);
   const engDropdownRef = useRef<HTMLDivElement>(null);
 
+  const [showLanding, setShowLanding] = useState(true);
   const [showWelcome, setShowWelcome] = useState(() => {
     try { return !localStorage.getItem(LS_WELCOME_KEY); }
     catch { return true; }
@@ -123,7 +125,13 @@ export default function App() {
 
   return (
     <div className="app" data-ui-theme={uiTheme}>
-      {showWelcome && (
+      {showLanding && (
+        <Suspense fallback={<div className="landing" style={{background:"#000"}} />}>
+          <LandingPage onLaunch={() => setShowLanding(false)} />
+        </Suspense>
+      )}
+      
+      {!showLanding && showWelcome && (
         <div className="welcome-overlay">
           <div className="welcome-modal">
             <div className="welcome-header">
@@ -164,218 +172,223 @@ export default function App() {
         </div>
       )}
 
-      <nav className="tab-bar">
-        <div className="tab-brand">
-          <img src={logoSvg} alt="" width="22" height="22" className="tab-logo" />
-          HydroGrid
-        </div>
 
-        <div className="tab-buttons">
-          {/* Map Layers — simple tab */}
-          <button
-            className={`tab-btn ${activeView === "layers" ? "active" : ""}`}
-            onClick={() => {
-              setActiveView("layers");
-              setFloodDropdownOpen(false);
-              setEngDropdownOpen(false);
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-              <line x1="8" y1="2" x2="8" y2="18" />
-              <line x1="16" y1="6" x2="16" y2="22" />
-            </svg>
-            Map Layers
-          </button>
+      {!showLanding && (
+        <>
+          <nav className="tab-bar">
+            <div className="tab-brand">
+              <img src={logoSvg} alt="" width="22" height="22" className="tab-logo" />
+              HydroGrid
+            </div>
 
-          {/* Flood Hazard dropdown */}
-          <div className="tab-dropdown-wrap" ref={floodDropdownRef}>
-            <button
-              className={`tab-btn ${isFloodView ? "active" : ""}`}
-              onClick={() => {
-                setEngDropdownOpen(false);
-                if (!isFloodView) {
-                  setActiveView("flood");
-                }
-                setFloodDropdownOpen((p) => !p);
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" />
-                <path d="M8 16l-2.3 2.3" />
-                <path d="M12 12l-2.3 2.3" />
-                <path d="M16 16l-2.3 2.3" />
-                <path d="M12 20l-2.3 2.3" />
-              </svg>
-              {isFloodView ? activeFloodLabel : "Flood Hazard"}
-              <svg
-                width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                className={`tab-chevron ${floodDropdownOpen ? "open" : ""}`}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-            {floodDropdownOpen && (
-              <div className="tab-dropdown">
-                {FLOOD_SUB_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.key}
-                    className={`tab-dropdown-item ${activeView === opt.key ? "active" : ""}`}
-                    onClick={() => selectFloodSub(opt.key)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button
-            className={`tab-btn ${activeView === "property" ? "active" : ""}`}
-            onClick={() => {
-              setActiveView("property");
-              setFloodDropdownOpen(false);
-              setEngDropdownOpen(false);
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-              <line x1="9" y1="6" x2="9" y2="6.01" />
-              <line x1="15" y1="6" x2="15" y2="6.01" />
-              <line x1="9" y1="10" x2="9" y2="10.01" />
-              <line x1="15" y1="10" x2="15" y2="10.01" />
-              <line x1="9" y1="14" x2="9" y2="14.01" />
-              <line x1="15" y1="14" x2="15" y2="14.01" />
-              <line x1="9" y1="18" x2="15" y2="18" />
-            </svg>
-            Property Lookup
-          </button>
-
-          {/* Site Analysis dropdown */}
-          <div className="tab-dropdown-wrap" ref={engDropdownRef}>
-            <button
-              className={`tab-btn ${isEngView ? "active" : ""}`}
-              onClick={() => {
-                setFloodDropdownOpen(false);
-                if (!isEngView) {
-                  setActiveView("engineering");
-                }
-                setEngDropdownOpen((p) => !p);
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 16c1.5-1.5 3-2 4.5-2s3 .5 4.5 2c1.5 1.5 3 2 4.5 2s3-.5 4.5-2" />
-                <path d="M2 12c1.5-1.5 3-2 4.5-2s3 .5 4.5 2c1.5 1.5 3 2 4.5 2s3-.5 4.5-2" />
-                <path d="M12 2v6" />
-                <path d="M9 5l3-3 3 3" />
-              </svg>
-              {isEngView ? activeEngLabel : "Site Analysis"}
-              <svg
-                width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                className={`tab-chevron ${engDropdownOpen ? "open" : ""}`}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-            {engDropdownOpen && (
-              <div className="tab-dropdown">
-                {ENG_SUB_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.key}
-                    className={`tab-dropdown-item ${activeView === opt.key ? "active" : ""}`}
-                    onClick={() => selectEngSub(opt.key)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button className="tab-theme-btn" onClick={cycleUiTheme} title="Cycle theme">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-            </svg>
-            {THEME_LABELS[uiTheme]}
-          </button>
-        </div>
-      </nav>
-
-      <div className="app-content">
-        {activeView === "layers" && (
-          <>
-            <Sidebar
-              layers={layers}
-              onToggle={toggleLayer}
-              isOpen={sidebarOpen}
-              onClose={() => setSidebarOpen(false)}
-              categoryFilter={["infrastructure", "environment", "energy"]}
-            />
-            {!sidebarOpen && (
+            <div className="tab-buttons">
+              {/* Map Layers — simple tab */}
               <button
-                className="sidebar-open-btn"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Open sidebar"
+                className={`tab-btn ${activeView === "layers" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveView("layers");
+                  setFloodDropdownOpen(false);
+                  setEngDropdownOpen(false);
+                }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                  <line x1="8" y1="2" x2="8" y2="18" />
+                  <line x1="16" y1="6" x2="16" y2="22" />
                 </svg>
+                Map Layers
               </button>
-            )}
-            <MapView key={mapKey} layers={layers} onMapMove={onMapMove} sidebarOpen={sidebarOpen} />
-          </>
-        )}
-        {activeView === "flood" && (
-          <>
-            <Sidebar
-              layers={layers}
-              onToggle={toggleLayer}
-              isOpen={sidebarOpen}
-              onClose={() => setSidebarOpen(false)}
-              categoryFilter={["flood"]}
-            />
-            {!sidebarOpen && (
+
+              {/* Flood Hazard dropdown */}
+              <div className="tab-dropdown-wrap" ref={floodDropdownRef}>
+                <button
+                  className={`tab-btn ${isFloodView ? "active" : ""}`}
+                  onClick={() => {
+                    setEngDropdownOpen(false);
+                    if (!isFloodView) {
+                      setActiveView("flood");
+                    }
+                    setFloodDropdownOpen((p) => !p);
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" />
+                    <path d="M8 16l-2.3 2.3" />
+                    <path d="M12 12l-2.3 2.3" />
+                    <path d="M16 16l-2.3 2.3" />
+                    <path d="M12 20l-2.3 2.3" />
+                  </svg>
+                  {isFloodView ? activeFloodLabel : "Flood Hazard"}
+                  <svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className={`tab-chevron ${floodDropdownOpen ? "open" : ""}`}
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                {floodDropdownOpen && (
+                  <div className="tab-dropdown">
+                    {FLOOD_SUB_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.key}
+                        className={`tab-dropdown-item ${activeView === opt.key ? "active" : ""}`}
+                        onClick={() => selectFloodSub(opt.key)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button
-                className="sidebar-open-btn"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Open sidebar"
+                className={`tab-btn ${activeView === "property" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveView("property");
+                  setFloodDropdownOpen(false);
+                  setEngDropdownOpen(false);
+                }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                  <line x1="9" y1="6" x2="9" y2="6.01" />
+                  <line x1="15" y1="6" x2="15" y2="6.01" />
+                  <line x1="9" y1="10" x2="9" y2="10.01" />
+                  <line x1="15" y1="10" x2="15" y2="10.01" />
+                  <line x1="9" y1="14" x2="9" y2="14.01" />
+                  <line x1="15" y1="14" x2="15" y2="14.01" />
+                  <line x1="9" y1="18" x2="15" y2="18" />
                 </svg>
+                Property Lookup
               </button>
+
+              {/* Site Analysis dropdown */}
+              <div className="tab-dropdown-wrap" ref={engDropdownRef}>
+                <button
+                  className={`tab-btn ${isEngView ? "active" : ""}`}
+                  onClick={() => {
+                    setFloodDropdownOpen(false);
+                    if (!isEngView) {
+                      setActiveView("engineering");
+                    }
+                    setEngDropdownOpen((p) => !p);
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 16c1.5-1.5 3-2 4.5-2s3 .5 4.5 2c1.5 1.5 3 2 4.5 2s3-.5 4.5-2" />
+                    <path d="M2 12c1.5-1.5 3-2 4.5-2s3 .5 4.5 2c1.5 1.5 3 2 4.5 2s3-.5 4.5-2" />
+                    <path d="M12 2v6" />
+                    <path d="M9 5l3-3 3 3" />
+                  </svg>
+                  {isEngView ? activeEngLabel : "Site Analysis"}
+                  <svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className={`tab-chevron ${engDropdownOpen ? "open" : ""}`}
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                {engDropdownOpen && (
+                  <div className="tab-dropdown">
+                    {ENG_SUB_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.key}
+                        className={`tab-dropdown-item ${activeView === opt.key ? "active" : ""}`}
+                        onClick={() => selectEngSub(opt.key)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button className="tab-theme-btn" onClick={cycleUiTheme} title="Cycle theme">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                </svg>
+                {THEME_LABELS[uiTheme]}
+              </button>
+            </div>
+          </nav>
+
+          <div className="app-content">
+            {activeView === "layers" && (
+              <>
+                <Sidebar
+                  layers={layers}
+                  onToggle={toggleLayer}
+                  isOpen={sidebarOpen}
+                  onClose={() => setSidebarOpen(false)}
+                  categoryFilter={["infrastructure", "environment", "energy"]}
+                />
+                {!sidebarOpen && (
+                  <button
+                    className="sidebar-open-btn"
+                    onClick={() => setSidebarOpen(true)}
+                    aria-label="Open sidebar"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                )}
+                <MapView key={mapKey} layers={layers} onMapMove={onMapMove} sidebarOpen={sidebarOpen} />
+              </>
             )}
-            <MapView key={mapKey} layers={layers} onMapMove={onMapMove} sidebarOpen={sidebarOpen} />
-          </>
-        )}
-        {activeView === "hydrometric" && (
-          <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
-            <HydrometricView />
-          </Suspense>
-        )}
-        {activeView === "precipitation" && (
-          <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
-            <PrecipitationView />
-          </Suspense>
-        )}
-        {activeView === "property" && <PropertyToolsView />}
-        {activeView === "engineering" && (
-          <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
-            <EngineeringView />
-          </Suspense>
-        )}
-        {activeView === "simulation" && (
-          <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
-            <StormSimulationView />
-          </Suspense>
-        )}
-        {activeView === "cost" && (
-          <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
-            <CostAnalysisView />
-          </Suspense>
-        )}
-      </div>
+            {activeView === "flood" && (
+              <>
+                <Sidebar
+                  layers={layers}
+                  onToggle={toggleLayer}
+                  isOpen={sidebarOpen}
+                  onClose={() => setSidebarOpen(false)}
+                  categoryFilter={["flood"]}
+                />
+                {!sidebarOpen && (
+                  <button
+                    className="sidebar-open-btn"
+                    onClick={() => setSidebarOpen(true)}
+                    aria-label="Open sidebar"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                )}
+                <MapView key={mapKey} layers={layers} onMapMove={onMapMove} sidebarOpen={sidebarOpen} />
+              </>
+            )}
+            {activeView === "hydrometric" && (
+              <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+                <HydrometricView />
+              </Suspense>
+            )}
+            {activeView === "precipitation" && (
+              <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+                <PrecipitationView />
+              </Suspense>
+            )}
+            {activeView === "property" && <PropertyToolsView />}
+            {activeView === "engineering" && (
+              <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+                <EngineeringView />
+              </Suspense>
+            )}
+            {activeView === "simulation" && (
+              <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+                <StormSimulationView />
+              </Suspense>
+            )}
+            {activeView === "cost" && (
+              <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+                <CostAnalysisView />
+              </Suspense>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
