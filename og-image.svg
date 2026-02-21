@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#000"/>
+  <defs>
+    <linearGradient id="wg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4fc3f7"/>
+      <stop offset="100%" style="stop-color:#0288d1"/>
+    </linearGradient>
+    <mask id="gm">
+      <rect width="120" height="120" fill="white"/>
+      <path d="M0 30H120M0 60H120M0 90H120" stroke="black" stroke-width="6"/>
+      <path d="M30 0V120M60 0V120M90 0V120" stroke="black" stroke-width="6"/>
+    </mask>
+  </defs>
+  <g transform="translate(540, 170)">
+    <path d="M60 7C60 7 15 53 15 83C15 104 35 121 60 121C85 121 105 104 105 83C105 53 60 7 60 7Z" fill="url(#wg)" mask="url(#gm)"/>
+    <path d="M60 7C60 7 15 53 15 83C15 104 35 121 60 121C85 121 105 104 105 83C105 53 60 7 60 7Z" fill="none" stroke="#01579b" stroke-width="3"/>
+  </g>
+  <text x="600" y="370" text-anchor="middle" font-family="monospace" font-size="72" font-weight="700" fill="#fff" letter-spacing="8">HYDRO<tspan fill="#4dff6a">GRID</tspan></text>
+  <text x="600" y="420" text-anchor="middle" font-family="monospace" font-size="18" fill="rgba(255,255,255,0.6)" letter-spacing="6">REAL-TIME HYDROLOGY &amp; INFRASTRUCTURE ANALYSIS</text>
+  <text x="600" y="530" text-anchor="middle" font-family="monospace" font-size="14" fill="rgba(255,255,255,0.3)" letter-spacing="4">HACKED 2026  UNIVERSITY OF ALBERTA</text>
+</svg>
