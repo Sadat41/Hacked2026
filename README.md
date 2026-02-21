@@ -265,11 +265,9 @@ Tested on modern Chromium-based browsers (Chrome, Edge) and Firefox. Requires We
 
 **Team Redacted** -- HackED 2026, University of Alberta
 
-| Name | Role |
-|------|------|
-| Md Sadat Hossain | Full-Stack / Lead |
-| Muhammed Ahmedtanov | Data & Backend |
-| Kai Renschler | Engineering Analysis |
+- Md Sadat Hossain
+- Muhammed Ahmedtanov
+- Kai Renschler
 
 Department of Civil and Environmental Engineering.
 
