@@ -216,9 +216,9 @@ function FlowDiagram() {
 }
 
 const MEMBERS = [
-  { name: "Md Sadat Hossain", role: "Full-Stack / Lead" },
-  { name: "Muhammed Ahmedtanov", role: "Data & Backend" },
-  { name: "Kai Renschler", role: "Engineering Analysis" },
+  "Md Sadat Hossain",
+  "Muhammed Ahmedtanov",
+  "Kai Renschler",
 ];
 
 interface Props {
@@ -315,15 +315,12 @@ export default function LandingPage({ onLaunch }: Props) {
             Civil &amp; Environmental Engineering students building data-driven tools for urban resilience.
           </p>
           <div className="ld-members">
-            {MEMBERS.map((m) => (
-              <div className="ld-member" key={m.name}>
+            {MEMBERS.map((name) => (
+              <div className="ld-member" key={name}>
                 <div className="ld-member-avatar">
-                  {m.name.split(" ").map((w) => w[0]).join("")}
+                  {name.split(" ").map((w) => w[0]).join("")}
                 </div>
-                <div>
-                  <div className="ld-member-name">{m.name}</div>
-                  <div className="ld-member-role">{m.role}</div>
-                </div>
+                <div className="ld-member-name">{name}</div>
               </div>
             ))}
           </div>
