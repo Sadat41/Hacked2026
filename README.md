@@ -1,7 +1,7 @@
-# CivicScale: Alberta's Engineering Intelligence 
+# HydroGrid: Alberta's Engineering Intelligence
 
 ## The Vision
-**CivicScale** is a comprehensive data-driven platform designed for the **HackED 2026** competition. Built by a team of University of Alberta engineers (Civil, Environmental, Mining, and Petroleum), this project aims to bridge the gap between raw municipal data and actionable engineering insights. 
+**HydroGrid** is a comprehensive data-driven platform designed for the **HackED 2026** competition. Built by a team of University of Alberta engineers (Civil, Environmental, Mining, and Petroleum), this project aims to bridge the gap between raw municipal data and actionable engineering insights.
 
 Our goal is to prototype a tool that helps urban planners and engineers visualize the intersection of infrastructure development, environmental impact, and resource management in Edmonton and the broader Alberta region.
 

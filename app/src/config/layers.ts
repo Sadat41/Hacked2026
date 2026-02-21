@@ -104,6 +104,37 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     enabled: false,
   },
   {
+    id: "property-details",
+    name: "Property Details (Lot Size & Zoning)",
+    description:
+      "Edmonton property details including lot area (m²), building area, zoning classification, year built, and legal description. Essential for engineering site analysis.",
+    category: "infrastructure",
+    endpoint: `${EDMONTON_API}/dkk9-cj3x.json?$limit=1000&$where=latitude IS NOT NULL AND lot_size > 0`,
+    type: "point",
+    style: {
+      color: "#d946ef",
+      weight: 1,
+      opacity: 0.9,
+      fillColor: "#e879f9",
+      fillOpacity: 0.6,
+    },
+    pointColor: "#d946ef",
+    pointRadius: 4,
+    maxFeatures: 1000,
+    popupFields: [
+      { key: "house_number", label: "House #" },
+      { key: "street_name", label: "Street" },
+      { key: "lot_size", label: "Lot Area (m²)", format: "number" },
+      { key: "total_gross_area", label: "Building Area (m²)", format: "number" },
+      { key: "zoning", label: "Zoning" },
+      { key: "year_built", label: "Year Built", format: "year" },
+      { key: "legal_description", label: "Legal Description" },
+      { key: "neighbourhood", label: "Neighbourhood" },
+      { key: "ward", label: "Ward" },
+    ],
+    enabled: false,
+  },
+  {
     id: "subdivisions",
     name: "Subdivision Applications",
     description:
@@ -296,13 +327,13 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     enabled: false,
   },
 
-  // ─── Alberta Climate & Water (Province-wide, Environment Canada) ─
+  // ─── Precipitation & Climate (Province-wide, Environment Canada) ─
   {
     id: "climate-stations",
     name: "Climate Stations (Alberta)",
     description:
       "Active Environment Canada weather stations across Alberta. Shows station location, type, and data availability.",
-    category: "environment",
+    category: "precipitation",
     endpoint: `${WEATHER_API}/collections/climate-stations/items?f=json&limit=500&PROVINCE_CODE=AB`,
     source: "geojson",
     type: "point",
@@ -332,7 +363,7 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     name: "Daily Precipitation (Alberta)",
     description:
       "Recent daily precipitation, temperature, and snowfall observations from Alberta weather stations (last 7 days).",
-    category: "environment",
+    category: "precipitation",
     endpoint: `${WEATHER_API}/collections/climate-daily/items?f=json&limit=500&PROVINCE_CODE=AB&sortby=-LOCAL_DATE&datetime=${DAILY_DATE_RANGE}`,
     source: "geojson",
     type: "point",
@@ -364,7 +395,7 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     name: "Precipitation Normals (30-yr Avg)",
     description:
       "Annual total precipitation depth (mm) averaged over 1981-2010 at each station. Baseline for engineering calculations.",
-    category: "environment",
+    category: "precipitation",
     endpoint: `${WEATHER_API}/collections/climate-normals/items?f=json&limit=500&PROVINCE_CODE=AB&NORMAL_ID=56&MONTH=13`,
     source: "geojson",
     type: "point",
@@ -394,7 +425,7 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     name: "Monthly Precipitation Summary",
     description:
       "Monthly precipitation totals, snowfall, and temperature summaries from Alberta stations. Latest available month.",
-    category: "environment",
+    category: "precipitation",
     endpoint: `${WEATHER_API}/collections/climate-monthly/items?f=json&limit=500&PROVINCE_CODE=AB&sortby=-LOCAL_DATE`,
     source: "geojson",
     type: "point",
@@ -426,7 +457,7 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     name: "Snowfall Normals (30-yr Avg)",
     description:
       "Annual total snowfall depth (cm) averaged over 1981-2010. Critical for snowmelt runoff and spring flood modeling.",
-    category: "environment",
+    category: "precipitation",
     endpoint: `${WEATHER_API}/collections/climate-normals/items?f=json&limit=500&PROVINCE_CODE=AB&NORMAL_ID=54&MONTH=13`,
     source: "geojson",
     type: "point",
@@ -455,7 +486,7 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     name: "Hydrometric Stations (Alberta)",
     description:
       "River and lake water level/flow monitoring stations across Alberta. Real-time and historical hydrometric data.",
-    category: "environment",
+    category: "flood",
     endpoint: `${WEATHER_API}/collections/hydrometric-stations/items?f=json&limit=500&PROV_TERR_STATE_LOC=AB`,
     source: "geojson",
     type: "point",
@@ -624,8 +655,9 @@ export const EDMONTON_CENTER: [number, number] = [53.5461, -113.4938];
 export const DEFAULT_ZOOM = 6;
 
 export const CATEGORY_META = {
-  flood: { label: "Alberta Flood Hazard", icon: "flood" },
   infrastructure: { label: "Infrastructure", icon: "building" },
   environment: { label: "Environment", icon: "leaf" },
+  precipitation: { label: "Precipitation & Climate", icon: "precip" },
+  flood: { label: "Flood Hazard", icon: "flood" },
   energy: { label: "Energy & Mining", icon: "bolt" },
 } as const;

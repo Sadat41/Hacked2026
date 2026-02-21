@@ -4,7 +4,7 @@ export interface LayerConfig {
   id: string;
   name: string;
   description: string;
-  category: "infrastructure" | "environment" | "energy" | "flood";
+  category: "infrastructure" | "environment" | "energy" | "flood" | "precipitation";
   endpoint: string;
   type: "point" | "polygon" | "geojson";
   /** "arcgis" = viewport-based ArcGIS FeatureServer; "geojson" = direct GeoJSON API */

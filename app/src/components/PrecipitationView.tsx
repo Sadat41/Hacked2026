@@ -5,6 +5,7 @@ import {
   CircleMarker,
   Popup,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import {
   BarChart,
@@ -19,9 +20,10 @@ import {
   Legend,
   Brush,
 } from "recharts";
+import type { LatLngBounds } from "leaflet";
 import { ALBERTA_CENTER } from "../config/layers";
 import { BASEMAPS, type BasemapKey } from "../config/basemaps";
-import BasemapSwitcher from "./BasemapSwitcher";
+import BasemapSwitcher, { getSavedBasemap } from "./BasemapSwitcher";
 import "leaflet/dist/leaflet.css";
 
 const WEATHER_API =
@@ -63,13 +65,45 @@ interface MonthlyRecord {
 
 type ViewMode = "daily" | "monthly";
 
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+function formatTimeTick(v: string, mode: ViewMode): string {
+  if (mode === "daily") {
+    // "YYYY-MM-DD" → "MMM DD 'YY"
+    const year = v.slice(2, 4);
+    const monthIdx = parseInt(v.slice(5, 7), 10) - 1;
+    const day = v.slice(8, 10);
+    return `${MONTH_ABBR[monthIdx] ?? v.slice(5, 7)} ${day} '${year}`;
+  }
+  // Monthly: "YYYY-MM" → "Jan '96"
+  const year = v.slice(2, 4);
+  const monthIdx = parseInt(v.slice(5, 7), 10) - 1;
+  return `${MONTH_ABBR[monthIdx] ?? v.slice(5, 7)} '${year}`;
+}
 
 function FlyTo({ lat, lng, zoom }: { lat: number; lng: number; zoom?: number }) {
   const map = useMap();
   useEffect(() => {
     map.flyTo([lat, lng], zoom ?? 10, { duration: 1.2 });
   }, [map, lat, lng, zoom]);
+  return null;
+}
+
+const MIN_STATION_ZOOM = 7;
+
+
+function MapViewState({
+  onViewChange,
+}: {
+  onViewChange: (bounds: LatLngBounds, zoom: number) => void;
+}) {
+  const map = useMapEvents({
+    moveend: () => onViewChange(map.getBounds(), map.getZoom()),
+    zoomend: () => onViewChange(map.getBounds(), map.getZoom()),
+  });
+  useEffect(() => {
+    onViewChange(map.getBounds(), map.getZoom());
+  }, [map, onViewChange]);
   return null;
 }
 
@@ -86,9 +120,16 @@ export default function PrecipitationView() {
   const [error, setError] = useState<string | null>(null);
   const [stationsLoading, setStationsLoading] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [basemap, setBasemap] = useState<BasemapKey>("dark");
+  const [basemap, setBasemap] = useState<BasemapKey>(getSavedBasemap);
+  const [mapBounds, setMapBounds] = useState<LatLngBounds | null>(null);
+  const [mapZoom, setMapZoom] = useState(5);
   const abortRef = useRef<AbortController>(undefined);
   const bm = BASEMAPS[basemap];
+
+  const handleViewChange = useCallback((bounds: LatLngBounds, zoom: number) => {
+    setMapBounds(bounds);
+    setMapZoom(zoom);
+  }, []);
 
   useEffect(() => {
     async function loadStations() {
@@ -190,14 +231,14 @@ export default function PrecipitationView() {
 
     const mode = s.hasMonthly ? "monthly" : "daily";
     setViewMode(mode);
-    applyFullRange(s, mode);
+    applyFullRange(s);
   }
 
-  function applyFullRange(s: Station, mode: ViewMode) {
-    const first = mode === "monthly" ? s.mlyFirst : s.dlyFirst;
-    const last = mode === "monthly" ? s.mlyLast : s.dlyLast;
-    setStartDate(first || s.firstDate);
-    setEndDate(last || s.lastDate);
+  function applyFullRange(s: Station) {
+    const allFirsts = [s.firstDate, s.dlyFirst, s.mlyFirst].filter(Boolean);
+    const allLasts = [s.lastDate, s.dlyLast, s.mlyLast].filter(Boolean);
+    setStartDate(allFirsts.sort()[0] || s.firstDate);
+    setEndDate(allLasts.sort().reverse()[0] || s.lastDate);
   }
 
   const filteredStations = useMemo(() => {
@@ -209,6 +250,14 @@ export default function PrecipitationView() {
         s.id.toLowerCase().includes(q)
     );
   }, [stationSearch, stations]);
+
+  const visibleStations = useMemo(() => {
+    if (stationSearch) return filteredStations;
+    if (mapZoom < MIN_STATION_ZOOM || !mapBounds) return [];
+    return stations.filter(
+      (s) => mapBounds.contains([s.lat, s.lng])
+    );
+  }, [stationSearch, filteredStations, stations, mapZoom, mapBounds]);
 
   const data = viewMode === "daily" ? dailyData : monthlyData;
   const totalPrecip = data.reduce((sum, r) => sum + ((r as any).precip ?? 0), 0);
@@ -227,7 +276,7 @@ export default function PrecipitationView() {
       {/* Sidebar */}
       <div className="precip-sidebar">
         <div className="precip-sidebar-header">
-          <h2>Precipitation</h2>
+          <h2>Precipitation Explorer</h2>
           <p className="precip-subtitle">
             Historical climate data &middot; Environment Canada
           </p>
@@ -292,9 +341,10 @@ export default function PrecipitationView() {
         {!selectedStation && !stationsLoading && (
           <div className="precip-section">
             <p className="precip-hint">
-              Click a station on the map or search above.
-              <br />
-              <strong>{stations.length}</strong> stations with historical data.
+              {mapZoom < MIN_STATION_ZOOM
+                ? <>Zoom into the map to see stations, or search above.<br /><strong>{stations.length}</strong> stations available across Alberta.</>
+                : <>Click a station on the map or search above.<br /><strong>{visibleStations.length}</strong> of {stations.length} stations in view.</>
+              }
             </p>
           </div>
         )}
@@ -303,6 +353,14 @@ export default function PrecipitationView() {
             <div className="precip-hint">Loading stations...</div>
           </div>
         )}
+
+        <div className="precip-section precip-footer-section">
+          <p className="precip-hint" style={{ fontSize: 11, color: "#475569" }}>
+            Data: <a href="https://api.weather.gc.ca" target="_blank" rel="noopener noreferrer" style={{ color: "#38bdf8", textDecoration: "none" }}>Environment Canada</a>
+            {" "}&middot;{" "}
+            <a href="https://climate.weather.gc.ca" target="_blank" rel="noopener noreferrer" style={{ color: "#38bdf8", textDecoration: "none" }}>Climate Services</a>
+          </p>
+        </div>
       </div>
 
       {/* Full map */}
@@ -313,28 +371,38 @@ export default function PrecipitationView() {
           className="precip-map-full"
           zoomControl={true}
         >
+          <MapViewState onViewChange={handleViewChange} />
           <TileLayer
             key={basemap}
             attribution={bm.attr}
             url={bm.url}
           />
+          {"labelsUrl" in bm && (
+            <TileLayer
+              key={basemap + "-labels"}
+              url={bm.labelsUrl as string}
+              zIndex={650}
+            />
+          )}
           {selectedStation && (
             <FlyTo lat={selectedStation.lat} lng={selectedStation.lng} />
           )}
-          {(stationSearch ? filteredStations : stations).map((s) => (
+
+          {/* Climate stations (viewport-filtered) */}
+          {visibleStations.map((s) => (
             <CircleMarker
               key={s.id}
               center={[s.lat, s.lng]}
-              radius={selectedStation?.id === s.id ? 8 : 4}
+              radius={selectedStation?.id === s.id ? 8 : 5}
               pathOptions={{
                 color: selectedStation?.id === s.id ? "#38bdf8" : "#3b82f6",
                 fillColor: selectedStation?.id === s.id ? "#38bdf8" : "#3b82f6",
-                fillOpacity: selectedStation?.id === s.id ? 1 : 0.5,
+                fillOpacity: selectedStation?.id === s.id ? 1 : 0.6,
                 weight: selectedStation?.id === s.id ? 2 : 1,
               }}
               eventHandlers={{ click: () => selectStation(s) }}
             >
-              <Popup className="civicscale-popup">
+              <Popup className="hydrogrid-popup">
                 <div style={{ fontFamily: "system-ui", fontSize: 13 }}>
                   <strong>{s.name}</strong>
                   <br />
@@ -347,6 +415,16 @@ export default function PrecipitationView() {
           ))}
         </MapContainer>
         <BasemapSwitcher active={basemap} onChange={setBasemap} />
+
+        {/* Zoom hint overlay */}
+        {!stationSearch && mapZoom < MIN_STATION_ZOOM && !selectedStation && (
+          <div className="precip-zoom-hint">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+            Zoom in to see weather stations
+          </div>
+        )}
 
         {/* Floating chart panel */}
         {panelOpen && selectedStation && (
@@ -365,7 +443,7 @@ export default function PrecipitationView() {
                       className={`precip-btn ${viewMode === "daily" ? "active" : ""}`}
                       onClick={() => {
                         setViewMode("daily");
-                        applyFullRange(selectedStation, "daily");
+                        applyFullRange(selectedStation);
                       }}
                     >
                       Daily
@@ -376,7 +454,7 @@ export default function PrecipitationView() {
                       className={`precip-btn ${viewMode === "monthly" ? "active" : ""}`}
                       onClick={() => {
                         setViewMode("monthly");
-                        applyFullRange(selectedStation, "monthly");
+                        applyFullRange(selectedStation);
                       }}
                     >
                       Monthly
@@ -444,7 +522,8 @@ export default function PrecipitationView() {
                           dataKey={viewMode === "daily" ? "date" : "month"}
                           stroke="#64748b"
                           tick={{ fontSize: 10 }}
-                          tickFormatter={(v: string) => v.slice(5)}
+                          minTickGap={40}
+                          tickFormatter={(v: string) => formatTimeTick(v, viewMode)}
                         />
                         <YAxis stroke="#64748b" tick={{ fontSize: 10 }} unit="mm" />
                         <Tooltip
@@ -464,7 +543,7 @@ export default function PrecipitationView() {
                             height={24}
                             stroke="#475569"
                             fill="#0f172a"
-                            tickFormatter={(v: string) => v.slice(5)}
+                            tickFormatter={(v: string) => formatTimeTick(v, viewMode)}
                           />
                         )}
                       </BarChart>
@@ -480,7 +559,8 @@ export default function PrecipitationView() {
                           dataKey={viewMode === "daily" ? "date" : "month"}
                           stroke="#64748b"
                           tick={{ fontSize: 10 }}
-                          tickFormatter={(v: string) => v.slice(5)}
+                          minTickGap={40}
+                          tickFormatter={(v: string) => formatTimeTick(v, viewMode)}
                         />
                         <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
                         <Tooltip contentStyle={tooltipStyle} />
