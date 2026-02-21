@@ -20,6 +20,8 @@ import {
   Brush,
 } from "recharts";
 import { ALBERTA_CENTER } from "../config/layers";
+import { BASEMAPS, type BasemapKey } from "../config/basemaps";
+import BasemapSwitcher from "./BasemapSwitcher";
 import "leaflet/dist/leaflet.css";
 
 const WEATHER_API =
@@ -61,22 +63,7 @@ interface MonthlyRecord {
 
 type ViewMode = "daily" | "monthly";
 
-function fmtDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
 
-function clampedRange(lastDate: string, years: number): [string, string] {
-  const end = new Date(lastDate);
-  if (isNaN(end.getTime())) {
-    const now = new Date();
-    const start = new Date(now);
-    start.setFullYear(now.getFullYear() - years);
-    return [fmtDate(start), fmtDate(now)];
-  }
-  const start = new Date(end);
-  start.setFullYear(end.getFullYear() - years);
-  return [fmtDate(start), fmtDate(end)];
-}
 
 function FlyTo({ lat, lng, zoom }: { lat: number; lng: number; zoom?: number }) {
   const map = useMap();
@@ -99,7 +86,9 @@ export default function PrecipitationView() {
   const [error, setError] = useState<string | null>(null);
   const [stationsLoading, setStationsLoading] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [basemap, setBasemap] = useState<BasemapKey>("dark");
   const abortRef = useRef<AbortController>(undefined);
+  const bm = BASEMAPS[basemap];
 
   useEffect(() => {
     async function loadStations() {
@@ -199,17 +188,16 @@ export default function PrecipitationView() {
     setStationSearch("");
     setPanelOpen(true);
 
-    const hasDaily = s.hasDaily;
-    const hasMonthly = s.hasMonthly;
-    const mode = hasMonthly ? "monthly" : "daily";
+    const mode = s.hasMonthly ? "monthly" : "daily";
     setViewMode(mode);
+    applyFullRange(s, mode);
+  }
 
-    const refDate = mode === "monthly" ? s.mlyLast : s.dlyLast;
-    const [from, to] = clampedRange(refDate, mode === "monthly" ? 5 : 1);
-    setStartDate(from);
-    setEndDate(to);
-
-    if (!hasDaily && hasMonthly) setViewMode("monthly");
+  function applyFullRange(s: Station, mode: ViewMode) {
+    const first = mode === "monthly" ? s.mlyFirst : s.dlyFirst;
+    const last = mode === "monthly" ? s.mlyLast : s.dlyLast;
+    setStartDate(first || s.firstDate);
+    setEndDate(last || s.lastDate);
   }
 
   const filteredStations = useMemo(() => {
@@ -318,7 +306,7 @@ export default function PrecipitationView() {
       </div>
 
       {/* Full map */}
-      <div className="precip-main">
+      <div className={`precip-main ${bm.isDark ? "theme-dark" : "theme-light"}`}>
         <MapContainer
           center={ALBERTA_CENTER}
           zoom={5}
@@ -326,8 +314,9 @@ export default function PrecipitationView() {
           zoomControl={true}
         >
           <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            key={basemap}
+            attribution={bm.attr}
+            url={bm.url}
           />
           {selectedStation && (
             <FlyTo lat={selectedStation.lat} lng={selectedStation.lng} />
@@ -357,6 +346,7 @@ export default function PrecipitationView() {
             </CircleMarker>
           ))}
         </MapContainer>
+        <BasemapSwitcher active={basemap} onChange={setBasemap} />
 
         {/* Floating chart panel */}
         {panelOpen && selectedStation && (
@@ -375,9 +365,7 @@ export default function PrecipitationView() {
                       className={`precip-btn ${viewMode === "daily" ? "active" : ""}`}
                       onClick={() => {
                         setViewMode("daily");
-                        const [f, t] = clampedRange(selectedStation.dlyLast, 1);
-                        setStartDate(f);
-                        setEndDate(t);
+                        applyFullRange(selectedStation, "daily");
                       }}
                     >
                       Daily
@@ -388,9 +376,7 @@ export default function PrecipitationView() {
                       className={`precip-btn ${viewMode === "monthly" ? "active" : ""}`}
                       onClick={() => {
                         setViewMode("monthly");
-                        const [f, t] = clampedRange(selectedStation.mlyLast, 5);
-                        setStartDate(f);
-                        setEndDate(t);
+                        applyFullRange(selectedStation, "monthly");
                       }}
                     >
                       Monthly
