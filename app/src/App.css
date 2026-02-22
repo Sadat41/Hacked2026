@@ -2761,6 +2761,155 @@
   border-bottom-color: #ddd;
 }
 
+/* ===== Accessible Theme — Comprehensive Overrides ===== */
+[data-ui-theme="accessible"] .cost-total .cost-summary-value {
+  color: #0f3460;
+}
+[data-ui-theme="accessible"] .cost-row-total td {
+  color: #0f3460 !important;
+  border-top-color: #aaa;
+}
+[data-ui-theme="accessible"] .cost-row-header td {
+  color: #1a1a2e !important;
+  border-bottom-color: #ccc !important;
+}
+[data-ui-theme="accessible"] .cost-row-active td {
+  background: rgba(15, 52, 96, 0.06) !important;
+  color: #0f3460 !important;
+}
+[data-ui-theme="accessible"] .cost-summary-label {
+  color: #555;
+}
+[data-ui-theme="accessible"] .cost-summary-value {
+  color: #1a1a2e;
+}
+[data-ui-theme="accessible"] .recharts-pie-label-text {
+  fill: #333 !important;
+}
+[data-ui-theme="accessible"] .cost-table tr:hover td {
+  background: rgba(15, 52, 96, 0.04);
+}
+
+[data-ui-theme="accessible"] .sidebar-category-title,
+[data-ui-theme="accessible"] .sidebar-header,
+[data-ui-theme="accessible"] .sidebar-search input {
+  color: #1a1a2e;
+}
+[data-ui-theme="accessible"] .sidebar-layer-name {
+  color: #222;
+}
+[data-ui-theme="accessible"] .sidebar-layer-desc {
+  color: #555;
+}
+
+[data-ui-theme="accessible"] .eng-label,
+[data-ui-theme="accessible"] .eng-value,
+[data-ui-theme="accessible"] .eng-field label {
+  color: #333;
+}
+[data-ui-theme="accessible"] .eng-section-title,
+[data-ui-theme="accessible"] .eng-heading {
+  color: #1a1a2e;
+}
+[data-ui-theme="accessible"] .eng-card,
+[data-ui-theme="accessible"] .eng-result-card {
+  background: #fafafa;
+  border-color: #ccc;
+  color: #333;
+}
+[data-ui-theme="accessible"] .eng-result-value {
+  color: #0f3460;
+}
+
+[data-ui-theme="accessible"] .sim-label,
+[data-ui-theme="accessible"] .sim-value,
+[data-ui-theme="accessible"] .sim-text {
+  color: #333;
+}
+
+[data-ui-theme="accessible"] .prop-detail-label {
+  color: #555;
+}
+[data-ui-theme="accessible"] .prop-detail-value {
+  color: #1a1a2e;
+}
+[data-ui-theme="accessible"] .prop-card {
+  background: #fafafa;
+  border-color: #ddd;
+}
+[data-ui-theme="accessible"] .prop-address {
+  color: #1a1a2e;
+}
+[data-ui-theme="accessible"] .prop-tag {
+  color: #333;
+  border-color: #ccc;
+  background: #f0f0f0;
+}
+
+[data-ui-theme="accessible"] .precip-station-name,
+[data-ui-theme="accessible"] .precip-label {
+  color: #222;
+}
+[data-ui-theme="accessible"] .precip-hint {
+  color: #555;
+}
+
+[data-ui-theme="accessible"] .site-panel-label,
+[data-ui-theme="accessible"] .site-panel-value {
+  color: #333;
+}
+[data-ui-theme="accessible"] .site-nearby-title {
+  color: #1a1a2e;
+}
+[data-ui-theme="accessible"] .site-nearby-item {
+  color: #0057b7;
+}
+[data-ui-theme="accessible"] .site-nearby-dist {
+  color: #666;
+}
+
+[data-ui-theme="accessible"] select,
+[data-ui-theme="accessible"] input {
+  color: #1a1a2e;
+  background: #fff;
+  border-color: #bbb;
+}
+
+[data-ui-theme="accessible"] .leaflet-popup-content-wrapper {
+  background: #fff !important;
+  color: #222 !important;
+}
+[data-ui-theme="accessible"] .leaflet-popup-content {
+  color: #222 !important;
+}
+[data-ui-theme="accessible"] .leaflet-popup-content td {
+  color: #333 !important;
+}
+[data-ui-theme="accessible"] .leaflet-popup-tip {
+  background: #fff !important;
+}
+
+[data-ui-theme="accessible"] .recharts-default-tooltip {
+  background: #fff !important;
+  border-color: #ccc !important;
+  color: #222 !important;
+}
+[data-ui-theme="accessible"] .recharts-tooltip-label {
+  color: #222 !important;
+}
+[data-ui-theme="accessible"] .recharts-cartesian-grid line {
+  stroke: #ddd !important;
+}
+[data-ui-theme="accessible"] .recharts-text {
+  fill: #555 !important;
+}
+
+[data-ui-theme="accessible"] .hg-tooltip {
+  background: #fff !important;
+  border: 1px solid #ccc !important;
+  color: #222 !important;
+}
+
 /* ===== Welcome Modal ===== */
 .welcome-overlay {
   position: fixed;
