@@ -4,10 +4,8 @@ import {
   TileLayer,
   ZoomControl,
   useMap,
-  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
-import type { LatLngBounds } from "leaflet";
 import { EDMONTON_CENTER } from "../config/layers";
 import { BASEMAPS, type BasemapKey } from "../config/basemaps";
 import BasemapSwitcher, { getSavedBasemap } from "./BasemapSwitcher";
@@ -196,15 +194,13 @@ function PipeLayer({
   return null;
 }
 
-/* ── Imperative manhole layer: zoom 13+ only, with direct zoom gating ── */
-const MANHOLE_MIN_ZOOM = 13;
+/* ── Self-contained manhole layer: owns its own fetch + zoom gating ── */
+const MANHOLE_MIN_ZOOM = 15;
 
 function ManholeLayer({
-  manholes,
   viewMode,
   visible,
 }: {
-  manholes: ManholeRaw[];
   viewMode: ViewMode;
   visible: boolean;
 }) {
@@ -212,79 +208,124 @@ function ManholeLayer({
   const groupRef = useRef<L.LayerGroup | null>(null);
   const rendererRef = useRef<L.Canvas | null>(null);
   const popupRef = useRef<L.Popup | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
 
-  const removeGroup = useCallback(() => {
+  const clear = useCallback(() => {
     if (groupRef.current) {
       map.removeLayer(groupRef.current);
       groupRef.current = null;
     }
   }, [map]);
 
-  // Instant hide when zoom drops below threshold — no waiting for React state
-  useMapEvents({
-    zoomend: () => {
-      if (map.getZoom() < MANHOLE_MIN_ZOOM) removeGroup();
-    },
-  });
+  const loadAndRender = useCallback(() => {
+    clear();
+    abortRef.current?.abort();
 
+    const z = map.getZoom();
+    if (z < MANHOLE_MIN_ZOOM || !visible) return;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const bounds = map.getBounds();
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const where = `latitude > ${sw.lat} AND latitude < ${ne.lat} AND longitude > ${sw.lng} AND longitude < ${ne.lng}`;
+    const limit = z >= 17 ? 8000 : z >= 16 ? 5000 : 3000;
+
+    fetch(
+      `${MANHOLE_API}?$where=${encodeURIComponent(where)}&$select=type,year_const,latitude,longitude,road_name&$limit=${limit}`,
+      { signal: controller.signal },
+    )
+      .then((r) => r.json())
+      .then((data: ManholeRaw[]) => {
+        if (controller.signal.aborted) return;
+        if (map.getZoom() < MANHOLE_MIN_ZOOM) return;
+
+        if (!rendererRef.current) rendererRef.current = L.canvas({ padding: 0.5 });
+        if (!popupRef.current)
+          popupRef.current = L.popup({ className: "hydrogrid-popup", maxWidth: 240 });
+
+        const popup = popupRef.current;
+        const vm = viewModeRef.current;
+        const group = L.layerGroup();
+
+        for (const m of data) {
+          const lat = parseFloat(m.latitude);
+          const lng = parseFloat(m.longitude);
+          if (isNaN(lat) || isNaN(lng)) continue;
+          const yr = m.year_const ? parseInt(m.year_const, 10) : null;
+          const ag = getAgeGroup(yr);
+          const color = vm === "type" ? "#94a3b8" : (AGE_COLORS[ag] ?? "#94a3b8");
+
+          const marker = L.circleMarker([lat, lng], {
+            radius: 3,
+            color: "#e2e8f0",
+            weight: 0.5,
+            fillColor: color,
+            fillOpacity: 0.8,
+            renderer: rendererRef.current,
+          });
+          marker.on("click", (e) => {
+            popup
+              .setLatLng(e.latlng)
+              .setContent(
+                `<div style="font-family:monospace;font-size:12px;max-width:200px">
+                  <div style="font-weight:700;margin-bottom:4px">Manhole — ${m.type}</div>
+                  <div>Year: ${m.year_const || "Unknown"}</div>
+                  ${m.road_name ? `<div>Road: ${m.road_name}</div>` : ""}
+                </div>`,
+              )
+              .openOn(map);
+          });
+          group.addLayer(marker);
+        }
+        group.addTo(map);
+        groupRef.current = group;
+      })
+      .catch(() => {});
+  }, [map, visible, clear]);
+
+  // Listen directly to Leaflet events — no React state for zoom
   useEffect(() => {
-    removeGroup();
-    if (!visible || manholes.length === 0) return;
+    let debounceId: ReturnType<typeof setTimeout>;
 
-    if (!rendererRef.current) rendererRef.current = L.canvas({ padding: 0.5 });
-    if (!popupRef.current)
-      popupRef.current = L.popup({ className: "hydrogrid-popup", maxWidth: 240 });
+    const onZoomEnd = () => {
+      if (map.getZoom() < MANHOLE_MIN_ZOOM) {
+        clear();
+        abortRef.current?.abort();
+      } else {
+        clearTimeout(debounceId);
+        debounceId = setTimeout(loadAndRender, 300);
+      }
+    };
 
-    const popup = popupRef.current;
-    const group = L.layerGroup();
+    const onMoveEnd = () => {
+      if (map.getZoom() >= MANHOLE_MIN_ZOOM) {
+        clearTimeout(debounceId);
+        debounceId = setTimeout(loadAndRender, 300);
+      }
+    };
 
-    for (const m of manholes) {
-      const lat = parseFloat(m.latitude);
-      const lng = parseFloat(m.longitude);
-      if (isNaN(lat) || isNaN(lng)) continue;
-      const yr = m.year_const ? parseInt(m.year_const, 10) : null;
-      const ag = getAgeGroup(yr);
-      const color = viewMode === "type" ? "#94a3b8" : (AGE_COLORS[ag] ?? "#94a3b8");
+    map.on("zoomend", onZoomEnd);
+    map.on("moveend", onMoveEnd);
 
-      const marker = L.circleMarker([lat, lng], {
-        radius: 3,
-        color: "#e2e8f0",
-        weight: 0.5,
-        fillColor: color,
-        fillOpacity: 0.8,
-        renderer: rendererRef.current,
-      });
-      marker.on("click", (e) => {
-        popup
-          .setLatLng(e.latlng)
-          .setContent(
-            `<div style="font-family:monospace;font-size:12px;max-width:200px">
-              <div style="font-weight:700;margin-bottom:4px">Manhole — ${m.type}</div>
-              <div>Year: ${m.year_const || "Unknown"}</div>
-              ${m.road_name ? `<div>Road: ${m.road_name}</div>` : ""}
-            </div>`,
-          )
-          .openOn(map);
-      });
-      group.addLayer(marker);
+    // Initial check
+    if (map.getZoom() >= MANHOLE_MIN_ZOOM && visible) {
+      debounceId = setTimeout(loadAndRender, 300);
     }
 
-    group.addTo(map);
-    groupRef.current = group;
+    return () => {
+      clearTimeout(debounceId);
+      map.off("zoomend", onZoomEnd);
+      map.off("moveend", onMoveEnd);
+      abortRef.current?.abort();
+      clear();
+    };
+  }, [map, visible, clear, loadAndRender]);
 
-    return () => removeGroup();
-  }, [manholes, viewMode, visible, map, removeGroup]);
-
-  return null;
-}
-
-/* ── Viewport tracker (only for manhole loading) ── */
-function ViewportTracker({ onViewport }: { onViewport: (b: LatLngBounds, z: number) => void }) {
-  const map = useMapEvents({
-    moveend: () => onViewport(map.getBounds(), map.getZoom()),
-    zoomend: () => onViewport(map.getBounds(), map.getZoom()),
-  });
-  useEffect(() => { onViewport(map.getBounds(), map.getZoom()); }, [map, onViewport]);
   return null;
 }
 
@@ -325,9 +366,6 @@ export default function DrainageWaterView() {
   const [pipesLoaded, setPipesLoaded] = useState(0);
   const [pipesReady, setPipesReady] = useState(false);
 
-  const [zoom, setZoom] = useState(12);
-  const [manholes, setManholes] = useState<ManholeRaw[]>([]);
-  const [manholesLoading, setManholesLoading] = useState(false);
 
   const [visibleTypes, setVisibleTypes] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -335,9 +373,6 @@ export default function DrainageWaterView() {
     initial["MANHOLE"] = true;
     return initial;
   });
-
-  const manholeAbortRef = useRef<AbortController | null>(null);
-  const vpDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Load stats
   useEffect(() => {
@@ -372,43 +407,6 @@ export default function DrainageWaterView() {
     return () => controller.abort();
   }, []);
 
-  // Viewport handler — zoom updates instantly, manhole fetch is debounced
-  const handleViewport = useCallback((bounds: LatLngBounds, z: number) => {
-    const floorZoom = Math.floor(z);
-    setZoom(floorZoom);
-
-    // Immediately clear manholes when below threshold
-    if (floorZoom < MANHOLE_MIN_ZOOM) {
-      clearTimeout(vpDebounceRef.current);
-      manholeAbortRef.current?.abort();
-      setManholes([]);
-      setManholesLoading(false);
-      return;
-    }
-
-    // Debounce the API fetch only
-    clearTimeout(vpDebounceRef.current);
-    vpDebounceRef.current = setTimeout(() => {
-      manholeAbortRef.current?.abort();
-      const controller = new AbortController();
-      manholeAbortRef.current = controller;
-
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
-      const where = `latitude > ${sw.lat} AND latitude < ${ne.lat} AND longitude > ${sw.lng} AND longitude < ${ne.lng}`;
-      const limit = floorZoom >= 15 ? 10000 : 4000;
-
-      setManholesLoading(true);
-      fetch(
-        `${MANHOLE_API}?$where=${encodeURIComponent(where)}&$select=type,year_const,latitude,longitude,road_name&$limit=${limit}`,
-        { signal: controller.signal },
-      )
-        .then((r) => r.json())
-        .then((data: ManholeRaw[]) => { if (!controller.signal.aborted) setManholes(data); })
-        .catch(() => {})
-        .finally(() => { if (!controller.signal.aborted) setManholesLoading(false); });
-    }, 250);
-  }, []);
 
   const { ageData, typeData, totalPipes, totalManholes } = useMemo(() => {
     const ageMap: Record<string, { pipes: number; manholes: number }> = {};
@@ -449,13 +447,11 @@ export default function DrainageWaterView() {
     ? AGE_COLORS
     : Object.fromEntries(Object.entries(PIPE_TYPE_META).map(([k, v]) => [k, v.color]));
 
-  const showManholes = visibleTypes["MANHOLE"] && zoom >= MANHOLE_MIN_ZOOM;
+  const showManholes = visibleTypes["MANHOLE"];
 
   const loadingMsg = !pipesReady
     ? `Loading pipes... ${pipesLoaded.toLocaleString()}`
-    : manholesLoading
-      ? "Loading manholes..."
-      : null;
+    : null;
 
   return (
     <div className="dw-view">
@@ -524,7 +520,7 @@ export default function DrainageWaterView() {
               <span className="dw-legend-label">Manhole</span>
             </button>
           </div>
-          <p className="dw-note">Manholes appear at zoom 13+. Click legend to toggle layers.</p>
+          <p className="dw-note">Manholes appear at zoom 15+ (close-up). Click legend to toggle layers.</p>
         </div>
 
         <div className="dw-section dw-footer">
@@ -542,7 +538,6 @@ export default function DrainageWaterView() {
         <MapContainer center={EDMONTON_CENTER} zoom={12} className="map-container" zoomControl={false} preferCanvas>
           <ZoomControl position="bottomright" />
           <InvalidateSize />
-          <ViewportTracker onViewport={handleViewport} />
           <TileLayer key={basemap} attribution={bm.attr} url={bm.url} {...("maxZoom" in bm ? { maxZoom: bm.maxZoom } : {})} />
           {"labelsUrl" in bm && <TileLayer key={basemap + "-labels"} url={bm.labelsUrl as string} zIndex={650} />}
 
@@ -550,7 +545,7 @@ export default function DrainageWaterView() {
             <PipeLayer pipes={allPipes} viewMode={viewMode} visibleTypes={visibleTypes} />
           )}
 
-          <ManholeLayer manholes={manholes} viewMode={viewMode} visible={showManholes} />
+          <ManholeLayer viewMode={viewMode} visible={showManholes} />
         </MapContainer>
         <BasemapSwitcher active={basemap} onChange={setBasemap} />
       </div>
