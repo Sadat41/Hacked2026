@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef, lazy, Suspense } from "react";
+import { useEffect, useState, useRef, lazy, Suspense, useCallback } from "react";
 import MapView from "./components/MapView";
 import Sidebar from "./components/Sidebar";
 import PropertyToolsView from "./components/PropertyToolsView";
 const LandingPage = lazy(() => import("./components/LandingPage"));
 import { useMapData } from "./hooks/useMapData";
 import { BASEMAPS, type BasemapKey } from "./config/basemaps";
+import { downloadPNG } from "./utils/export";
 import logoSvg from "./assets/logo.svg";
 import "./App.css";
 
@@ -103,6 +104,11 @@ export default function App() {
     setScaleOpen(false);
     try { localStorage.setItem(LS_SCALE_KEY, String(s)); } catch { /* ignore */ }
   }
+
+  const handleExport = useCallback(() => {
+    const content = document.querySelector(".app-content") as HTMLElement | null;
+    if (content) downloadPNG(content, `hydrogrid_${activeView}.png`);
+  }, [activeView]);
 
   useEffect(() => {
     loadVisibleLayers();
@@ -320,7 +326,16 @@ export default function App() {
                 )}
               </div>
 
-              <div className="tab-dropdown-wrap" ref={scaleRef} style={{ marginLeft: "auto" }}>
+              <button className="tab-theme-btn" onClick={handleExport} title="Export current view as PNG" style={{ marginLeft: "auto" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Export
+              </button>
+
+              <div className="tab-dropdown-wrap" ref={scaleRef}>
                 <button className="tab-theme-btn" onClick={() => setScaleOpen(o => !o)} title="UI Scale">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" />
