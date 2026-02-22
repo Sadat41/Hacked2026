@@ -18,7 +18,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 [![HackED 2026](https://img.shields.io/badge/HackED-2026-orange?style=flat)](https://hacked.compeclub.com/)
 
-[Live Demo](https://hydrogrid.app) · [Features](#features) · [Architecture](#architecture) · [Installation](#installation) · [Data Sources](#data-sources) · [Team](#team)
+[Live Demo](https://hydrogrid.app) · [Features](#features) · [Architecture](#architecture) · [Installation](#installation) · [Tech Stack](#tech-stack) · [Data Sources](#data-sources) · [Team](#team)
 
 </div>
 
@@ -104,27 +104,6 @@ Everything runs client-side. There is no backend server -- the app fetches data 
 
 ---
 
-## Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **UI Framework** | React 19, TypeScript | Component architecture, type safety |
-| **Build Tool** | Vite 7 | Development server, HMR, production bundling |
-| **Mapping** | Leaflet 1.9, React-Leaflet 5 | Interactive map, GeoJSON layers, tile rendering |
-| **Basemaps** | OpenStreetMap, CARTO, Esri, OpenTopoMap | Dark, light, satellite, terrain, street tile layers |
-| **Charts** | Recharts 3 | Precipitation timeseries, flow charts, cost breakdowns |
-| **3D Globe** | Three.js r183, React Three Fiber 9 | Landing page Earth with NASA Blue Marble textures |
-| **Styling** | Vanilla CSS | 3 switchable themes, no external CSS framework |
-| **Deployment** | GitHub Pages (gh-pages) | Static hosting of production build |
-
-**Frontend:** React + TypeScript with Vite for bundling. No backend server required.
-**State Management:** React hooks and localStorage persistence for theme/basemap preferences.
-**Charts & Visualization:** Recharts for all bar, line, area, and pie charts.
-**Mapping:** Leaflet.js handles all interactive map rendering, GeoJSON overlay management, marker clustering, and popup display. Tile layers served from CARTO, OpenStreetMap, Esri, and OpenTopoMap CDNs.
-**3D Landing Page:** Three.js globe with NASA Blue Marble colour texture, bump map, specular ocean map, cloud layer, and custom atmosphere shader. Canvas unmounts on scroll for zero GPU overhead on other sections.
-
----
-
 ## Architecture
 
 ```
@@ -184,7 +163,88 @@ Everything runs client-side. There is no backend server -- the app fetches data 
 
 ---
 
-## APIs & Data Sources — Comprehensive Credit
+## Installation
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18 or later
+- npm (included with Node.js)
+
+### Clone and Install
+
+```bash
+git clone https://github.com/Sadat41/HydroGrid.git
+cd HydroGrid/app
+npm install
+```
+
+### Development Server
+
+```bash
+npm run dev
+```
+
+Opens at `http://localhost:5173`. Vite provides hot module replacement -- changes reflect instantly.
+
+### Production Build
+
+```bash
+npm run build
+```
+
+Outputs optimised static files to `app/dist/`. The build can be served from any static hosting provider.
+
+### Preview Production Build Locally
+
+```bash
+npm run preview
+```
+
+### Deploy to GitHub Pages
+
+```bash
+npm run deploy
+```
+
+Builds the project and pushes the `dist/` folder to the `gh-pages` branch.
+
+---
+
+## Tech Stack
+
+<div align="center">
+
+![React](https://img.shields.io/badge/REACT_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TYPESCRIPT_5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/VITE_7-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Leaflet](https://img.shields.io/badge/LEAFLET_1.9-199900?style=for-the-badge&logo=leaflet&logoColor=white)
+![Three.js](https://img.shields.io/badge/THREE.JS_r183-000000?style=for-the-badge&logo=three.js&logoColor=white)
+![Recharts](https://img.shields.io/badge/RECHARTS_3-FF6384?style=for-the-badge&logo=react&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![GitHub Pages](https://img.shields.io/badge/GITHUB_PAGES-222222?style=for-the-badge&logo=github-pages&logoColor=white)
+
+</div>
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **UI Framework** | React 19, TypeScript | Component architecture, type safety |
+| **Build Tool** | Vite 7 | Development server, HMR, production bundling |
+| **Mapping** | Leaflet 1.9, React-Leaflet 5 | Interactive map, GeoJSON layers, tile rendering |
+| **Basemaps** | OpenStreetMap, CARTO, Esri, OpenTopoMap | Dark, light, satellite, terrain, street tile layers |
+| **Charts** | Recharts 3 | Precipitation timeseries, flow charts, cost breakdowns |
+| **3D Globe** | Three.js r183, React Three Fiber 9 | Landing page Earth with NASA Blue Marble textures |
+| **Styling** | Vanilla CSS | 3 switchable themes, no external CSS framework |
+| **Deployment** | GitHub Pages (gh-pages) | Static hosting of production build |
+
+**Frontend:** React + TypeScript with Vite for bundling. No backend server required.
+**State Management:** React hooks and localStorage persistence for theme/basemap preferences.
+**Charts & Visualization:** Recharts for all bar, line, area, and pie charts.
+**Mapping:** Leaflet.js handles all interactive map rendering, GeoJSON overlay management, marker clustering, and popup display. Tile layers served from CARTO, OpenStreetMap, Esri, and OpenTopoMap CDNs.
+**3D Landing Page:** Three.js globe with NASA Blue Marble colour texture, bump map, specular ocean map, cloud layer, and custom atmosphere shader. Canvas unmounts on scroll for zero GPU overhead on other sections.
+
+---
+
+## Data Sources
 
 > **All data is fetched at runtime from public APIs. No data is bundled with the application. No API keys are required — every endpoint used is open and free.**
 
@@ -303,53 +363,6 @@ Everything runs client-side. There is no backend server -- the app fetches data 
 | **Total** | **31 unique data endpoints** | | |
 
 All API calls are made client-side using the browser `fetch()` API. There is no backend server, no proxy, and no API keys. Every endpoint is publicly accessible.
-
----
-
-## Installation
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) 18 or later
-- npm (included with Node.js)
-
-### Clone and Install
-
-```bash
-git clone https://github.com/Sadat41/HydroGrid.git
-cd HydroGrid/app
-npm install
-```
-
-### Development Server
-
-```bash
-npm run dev
-```
-
-Opens at `http://localhost:5173`. Vite provides hot module replacement -- changes reflect instantly.
-
-### Production Build
-
-```bash
-npm run build
-```
-
-Outputs optimised static files to `app/dist/`. The build can be served from any static hosting provider.
-
-### Preview Production Build Locally
-
-```bash
-npm run preview
-```
-
-### Deploy to GitHub Pages
-
-```bash
-npm run deploy
-```
-
-Builds the project and pushes the `dist/` folder to the `gh-pages` branch.
 
 ---
 
