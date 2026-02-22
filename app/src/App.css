@@ -3292,6 +3292,301 @@
   opacity: 0.85;
 }
 
+/* ===== Drainage & Water View ===== */
+.dw-view {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.dw-sidebar {
+  width: 380px;
+  min-width: 380px;
+  background: var(--hg-bg);
+  border-right: 1px solid var(--hg-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  zoom: var(--ui-scale);
+}
+
+.dw-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dw-sidebar::-webkit-scrollbar-thumb {
+  background: var(--hg-border);
+  border-radius: 2px;
+}
+
+.dw-sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--hg-border);
+}
+
+.dw-sidebar-header h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hg-green);
+  margin: 0;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: var(--hg-glow-sm);
+}
+
+.dw-subtitle {
+  font-size: 11px;
+  color: var(--hg-green-muted);
+  margin: 6px 0 0;
+  letter-spacing: 0.04em;
+}
+
+.dw-subtitle strong {
+  color: var(--hg-green);
+}
+
+.dw-section {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--hg-border);
+}
+
+.dw-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--hg-green-muted);
+  margin-bottom: 8px;
+}
+
+.dw-toggle-row {
+  display: flex;
+  gap: 4px;
+}
+
+.dw-toggle-btn {
+  flex: 1;
+  padding: 7px 14px;
+  border: 1px solid var(--hg-border);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--hg-green-dim);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+
+.dw-toggle-btn.active {
+  background: var(--hg-green-faint);
+  border-color: var(--hg-green);
+  color: var(--hg-green);
+  text-shadow: var(--hg-glow-sm);
+}
+
+.dw-toggle-btn:hover:not(.active) {
+  background: var(--hg-green-faint);
+  color: var(--hg-green);
+}
+
+.dw-chart-section {
+  padding-bottom: 10px;
+}
+
+.dw-chart-header-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.dw-chart-axis-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--hg-green-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dw-chart-axis-right {
+  display: flex;
+  gap: 20px;
+}
+
+.dw-chart-axis-right span {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--hg-green-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 52px;
+  text-align: right;
+}
+
+.dw-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dw-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 20px;
+}
+
+.dw-bar-label {
+  width: 56px;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--hg-green-dim);
+  text-align: right;
+  letter-spacing: 0.03em;
+}
+
+.dw-bar-track {
+  flex: 1;
+  height: 14px;
+  background: var(--hg-green-faint);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.dw-bar-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+.dw-bar-value {
+  min-width: 52px;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--hg-green-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.dw-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dw-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.12s;
+  text-align: left;
+  font-family: inherit;
+}
+
+.dw-legend-item.active {
+  border-color: var(--hg-border);
+  background: var(--hg-green-faint);
+}
+
+.dw-legend-item:not(.active) {
+  opacity: 0.35;
+}
+
+.dw-legend-item:hover {
+  background: var(--hg-green-faint);
+  border-color: var(--hg-border);
+}
+
+.dw-legend-label {
+  font-size: 11px;
+  color: var(--hg-green-dim);
+  letter-spacing: 0.03em;
+}
+
+.dw-legend-item.active .dw-legend-label {
+  color: var(--hg-green);
+}
+
+.dw-note {
+  font-size: 10px;
+  color: var(--hg-green-muted);
+  margin: 8px 0 0;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+.dw-footer {
+  margin-top: auto;
+  border-bottom: none !important;
+}
+
+.dw-footer p {
+  font-size: 11px;
+  color: var(--hg-green-muted);
+  margin: 0;
+}
+
+.dw-footer a {
+  color: var(--hg-green);
+  text-decoration: none;
+}
+
+.dw-footer a:hover {
+  text-decoration: underline;
+}
+
+.dw-map-outer {
+  flex: 1;
+  position: relative;
+  height: 100%;
+}
+
+.dw-map-loading {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 800;
+  background: var(--hg-panel);
+  border: 1px solid var(--hg-border);
+  border-radius: 2px;
+  padding: 6px 16px;
+  font-size: 11px;
+  color: var(--hg-green-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: var(--hg-glow-sm);
+}
+
+@media (max-width: 768px) {
+  .dw-view {
+    flex-direction: column;
+  }
+  .dw-sidebar {
+    width: 100%;
+    min-width: unset;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--hg-border);
+    zoom: 1 !important;
+  }
+  .dw-map-outer {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
 /* ===== Landing Page — Scroll Container ===== */
 .landing-scroll {
   position: fixed;

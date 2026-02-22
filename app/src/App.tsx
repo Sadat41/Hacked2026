@@ -14,7 +14,8 @@ const HydrometricView = lazy(() => import("./components/HydrometricView"));
 const EngineeringView = lazy(() => import("./components/EngineeringView"));
 const StormSimulationView = lazy(() => import("./components/StormSimulationView"));
 const CostAnalysisView = lazy(() => import("./components/CostAnalysisView"));
-type ActiveView = "layers" | "flood" | "precipitation" | "hydrometric" | "property" | "engineering" | "simulation" | "cost";
+const DrainageWaterView = lazy(() => import("./components/DrainageWaterView"));
+type ActiveView = "layers" | "drainage" | "flood" | "precipitation" | "hydrometric" | "property" | "engineering" | "simulation" | "cost";
 type FloodSubView = "flood" | "hydrometric" | "precipitation";
 type EngSubView = "engineering" | "simulation" | "cost";
 type UiTheme = "terminal" | "dark" | "accessible";
@@ -224,6 +225,24 @@ export default function App() {
                 Map Layers
               </button>
 
+              {/* Drainage & Water tab */}
+              <button
+                className={`tab-btn ${activeView === "drainage" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveView("drainage");
+                  setFloodDropdownOpen(false);
+                  setEngDropdownOpen(false);
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 16c1.5-1.5 3-2 4.5-2s3 .5 4.5 2c1.5 1.5 3 2 4.5 2s3-.5 4.5-2" />
+                  <path d="M2 12c1.5-1.5 3-2 4.5-2s3 .5 4.5 2c1.5 1.5 3 2 4.5 2s3-.5 4.5-2" />
+                  <path d="M12 2v6" />
+                  <path d="M9 5l3-3 3 3" />
+                </svg>
+                Drainage &amp; Water
+              </button>
+
               {/* Flood Hazard dropdown */}
               <div className="tab-dropdown-wrap" ref={floodDropdownRef}>
                 <button
@@ -423,6 +442,11 @@ export default function App() {
             {activeView === "precipitation" && (
               <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
                 <PrecipitationView />
+              </Suspense>
+            )}
+            {activeView === "drainage" && (
+              <Suspense fallback={<div className="precip-overlay-loading">Loading...</div>}>
+                <DrainageWaterView />
               </Suspense>
             )}
             {activeView === "property" && <PropertyToolsView />}
