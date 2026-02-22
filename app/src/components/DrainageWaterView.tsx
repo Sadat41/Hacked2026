@@ -17,6 +17,7 @@ import "leaflet/dist/leaflet.css";
 
 const PIPE_API = "https://data.edmonton.ca/resource/bh8y-pn5j.json";
 const MANHOLE_API = "https://data.edmonton.ca/resource/6waz-yxqq.json";
+const BATCH_SIZE = 50000;
 
 const PIPE_TYPE_META: Record<string, { color: string; dash: number[]; weight: number; label: string; style: string }> = {
   STORM:      { color: "#38bdf8", dash: [],     weight: 2,   label: "Storm",     style: "Solid" },
@@ -65,8 +66,6 @@ interface PipeFeatureRaw {
   type: string;
   year_const?: string;
   geometry_line?: GeoJSON.MultiLineString;
-  road_name?: string;
-  neighbourhood_name?: string;
 }
 
 interface ManholeRaw {
@@ -83,13 +82,33 @@ function InvalidateSize() {
   return null;
 }
 
-function MapMoveHandler({ onMove }: { onMove: (b: LatLngBounds, z: number) => void }) {
+function ManholeLoader({ onMove }: { onMove: (b: LatLngBounds, z: number) => void }) {
   const map = useMapEvents({
     moveend: () => onMove(map.getBounds(), map.getZoom()),
     zoomend: () => onMove(map.getBounds(), map.getZoom()),
   });
   useEffect(() => { onMove(map.getBounds(), map.getZoom()); }, [map, onMove]);
   return null;
+}
+
+async function fetchAllPipes(
+  onProgress: (loaded: number) => void,
+  signal: AbortSignal,
+): Promise<PipeFeatureRaw[]> {
+  const allPipes: PipeFeatureRaw[] = [];
+  let offset = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    if (signal.aborted) return allPipes;
+    const url = `${PIPE_API}?$select=type,year_const,geometry_line&$limit=${BATCH_SIZE}&$offset=${offset}&$order=:id`;
+    const res = await fetch(url, { signal });
+    const batch: PipeFeatureRaw[] = await res.json();
+    allPipes.push(...batch);
+    onProgress(allPipes.length);
+    if (batch.length < BATCH_SIZE) break;
+    offset += BATCH_SIZE;
+  }
+  return allPipes;
 }
 
 export default function DrainageWaterView() {
@@ -101,8 +120,11 @@ export default function DrainageWaterView() {
   const [statsLoading, setStatsLoading] = useState(true);
 
   const [pipes, setPipes] = useState<PipeFeatureRaw[]>([]);
+  const [pipesLoaded, setPipesLoaded] = useState(0);
+  const [pipesLoading, setPipesLoading] = useState(true);
+
   const [manholes, setManholes] = useState<ManholeRaw[]>([]);
-  const [mapLoading, setMapLoading] = useState(false);
+  const [manholesLoading, setManholesLoading] = useState(false);
 
   const [visibleTypes, setVisibleTypes] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -111,10 +133,9 @@ export default function DrainageWaterView() {
     return initial;
   });
 
-  const boundsRef = useRef<LatLngBounds | null>(null);
-  const zoomRef = useRef(12);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const manholeAbortRef = useRef<AbortController | null>(null);
 
+  // Load stats (aggregated counts - fast)
   useEffect(() => {
     let cancelled = false;
     async function loadStats() {
@@ -138,38 +159,47 @@ export default function DrainageWaterView() {
     return () => { cancelled = true; };
   }, []);
 
-  const loadMapData = useCallback(async (bounds: LatLngBounds, zoom: number) => {
+  // Load ALL pipes at mount (batched)
+  useEffect(() => {
+    const controller = new AbortController();
+    setPipesLoading(true);
+    fetchAllPipes(
+      (n) => setPipesLoaded(n),
+      controller.signal,
+    ).then((all) => {
+      if (!controller.signal.aborted) {
+        setPipes(all);
+        setPipesLoading(false);
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) setPipesLoading(false);
+    });
+    return () => controller.abort();
+  }, []);
+
+  // Load manholes viewport-based (they're 106k points, load on zoom)
+  const loadManholes = useCallback(async (bounds: LatLngBounds, zoom: number) => {
+    if (zoom < 13) { setManholes([]); return; }
+    manholeAbortRef.current?.abort();
+    const controller = new AbortController();
+    manholeAbortRef.current = controller;
+
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
     const where = `latitude > ${sw.lat} AND latitude < ${ne.lat} AND longitude > ${sw.lng} AND longitude < ${ne.lng}`;
-    const pipeLimit = zoom >= 14 ? 10000 : zoom >= 12 ? 6000 : 3000;
-    const manholeLimit = zoom >= 15 ? 5000 : zoom >= 13 ? 2000 : 500;
+    const limit = zoom >= 15 ? 10000 : 4000;
 
-    setMapLoading(true);
+    setManholesLoading(true);
     try {
-      const [pRes, mRes] = await Promise.all([
-        fetch(`${PIPE_API}?$where=${encodeURIComponent(where)}&$select=type,year_const,geometry_line,road_name,neighbourhood_name&$limit=${pipeLimit}`),
-        zoom >= 13
-          ? fetch(`${MANHOLE_API}?$where=${encodeURIComponent(where)}&$select=type,year_const,latitude,longitude,road_name&$limit=${manholeLimit}`)
-          : Promise.resolve(null),
-      ]);
-      const pData: PipeFeatureRaw[] = await pRes.json();
-      const mData: ManholeRaw[] = mRes ? await mRes.json() : [];
-      setPipes(pData);
-      setManholes(mData);
-    } catch { /* ignore */ }
-    setMapLoading(false);
+      const res = await fetch(
+        `${MANHOLE_API}?$where=${encodeURIComponent(where)}&$select=type,year_const,latitude,longitude,road_name&$limit=${limit}`,
+        { signal: controller.signal },
+      );
+      const data: ManholeRaw[] = await res.json();
+      if (!controller.signal.aborted) setManholes(data);
+    } catch { /* ignore aborts */ }
+    if (!controller.signal.aborted) setManholesLoading(false);
   }, []);
-
-  const handleMapMove = useCallback(
-    (bounds: LatLngBounds, zoom: number) => {
-      boundsRef.current = bounds;
-      zoomRef.current = zoom;
-      clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => loadMapData(bounds, zoom), 500);
-    },
-    [loadMapData]
-  );
 
   const { ageData, typeData, totalPipes, totalManholes } = useMemo(() => {
     const ageMap: Record<string, { pipes: number; manholes: number }> = {};
@@ -210,12 +240,7 @@ export default function DrainageWaterView() {
       features.push({
         type: "Feature",
         geometry: p.geometry_line,
-        properties: {
-          type: p.type,
-          year_const: p.year_const,
-          road_name: p.road_name,
-          neighbourhood_name: p.neighbourhood_name,
-        },
+        properties: { type: p.type, year_const: p.year_const },
       });
     }
     return { type: "FeatureCollection", features };
@@ -244,7 +269,7 @@ export default function DrainageWaterView() {
         opacity: 0.85,
       };
     },
-    [viewMode]
+    [viewMode],
   );
 
   const bm = BASEMAPS[basemap];
@@ -259,6 +284,12 @@ export default function DrainageWaterView() {
   const barGroups = viewMode === "age" ? AGE_GROUPS : Object.keys(PIPE_TYPE_META);
   const barData = viewMode === "age" ? ageData : typeData;
   const barColors = viewMode === "age" ? AGE_COLORS : Object.fromEntries(Object.entries(PIPE_TYPE_META).map(([k, v]) => [k, v.color]));
+
+  const loadingMsg = pipesLoading
+    ? `Loading pipes... ${pipesLoaded.toLocaleString()} segments`
+    : manholesLoading
+      ? "Loading manholes..."
+      : null;
 
   return (
     <div className="dw-view">
@@ -294,24 +325,15 @@ export default function DrainageWaterView() {
         </div>
 
         <div className="dw-section dw-chart-section">
-          {viewMode === "age" && (
-            <div className="dw-chart-header-labels">
-              <span className="dw-chart-axis-label">Age (years)</span>
-              <span className="dw-chart-axis-right">
-                <span>Pipes</span>
-                <span>Manholes</span>
-              </span>
-            </div>
-          )}
-          {viewMode === "type" && (
-            <div className="dw-chart-header-labels">
-              <span className="dw-chart-axis-label">Type</span>
-              <span className="dw-chart-axis-right">
-                <span>Pipes</span>
-                <span>Manholes</span>
-              </span>
-            </div>
-          )}
+          <div className="dw-chart-header-labels">
+            <span className="dw-chart-axis-label">
+              {viewMode === "age" ? "Age (years)" : "Type"}
+            </span>
+            <span className="dw-chart-axis-right">
+              <span>Pipes</span>
+              <span>Manholes</span>
+            </span>
+          </div>
           <div className="dw-bar-list">
             {barGroups.map((group) => {
               const d = barData[group] ?? { pipes: 0, manholes: 0 };
@@ -386,16 +408,17 @@ export default function DrainageWaterView() {
       </aside>
 
       <div className={`dw-map-outer ${bm.isDark ? "theme-dark" : "theme-light"}`}>
-        {mapLoading && <div className="dw-map-loading">Loading pipes...</div>}
+        {loadingMsg && <div className="dw-map-loading">{loadingMsg}</div>}
         <MapContainer
           center={EDMONTON_CENTER}
           zoom={12}
           className="map-container"
           zoomControl={false}
+          preferCanvas={true}
         >
           <ZoomControl position="bottomright" />
           <InvalidateSize />
-          <MapMoveHandler onMove={handleMapMove} />
+          <ManholeLoader onMove={loadManholes} />
           <TileLayer
             key={basemap}
             attribution={bm.attr}
@@ -421,11 +444,9 @@ export default function DrainageWaterView() {
                     <table style="border-collapse:collapse">
                       <tr><td style="padding:1px 8px 1px 0;opacity:0.6">Year</td><td>${yr}</td></tr>
                       <tr><td style="padding:1px 8px 1px 0;opacity:0.6">Age</td><td>${age} yrs</td></tr>
-                      ${p.road_name ? `<tr><td style="padding:1px 8px 1px 0;opacity:0.6">Road</td><td>${p.road_name}</td></tr>` : ""}
-                      ${p.neighbourhood_name ? `<tr><td style="padding:1px 8px 1px 0;opacity:0.6">Area</td><td>${p.neighbourhood_name}</td></tr>` : ""}
                     </table>
                   </div>`,
-                  { className: "hydrogrid-popup", maxWidth: 280 }
+                  { className: "hydrogrid-popup", maxWidth: 280 },
                 );
               }}
             />
