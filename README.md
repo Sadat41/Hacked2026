@@ -307,6 +307,12 @@ Department of Civil and Environmental Engineering.
 
 ---
 
+## Acknowledgements
+
+This project was built in under 48 hours with the help of [Cursor](https://cursor.com) and [Claude](https://anthropic.com). What would have taken weeks of manual development was possible in a single weekend thanks to AI-assisted coding. The architecture, 10+ API integrations, analysis engine, 3D landing page, and full deployment were all completed during the HackED 2026 hackathon.
+
+---
+
 ## License
 
 MIT
