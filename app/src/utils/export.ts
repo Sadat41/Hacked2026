@@ -21,18 +21,13 @@ export function downloadCSV(rows: readonly any[], filename: string) {
 }
 
 export function downloadPNG(element: HTMLElement, filename: string) {
-  import("html2canvas").then(({ default: html2canvas }) => {
-    html2canvas(element, {
-      backgroundColor: null,
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      foreignObjectRendering: false,
-    }).then((canvas) => {
-      canvas.toBlob((blob) => {
-        if (blob) triggerDownload(blob, filename.endsWith(".png") ? filename : filename + ".png");
-      });
+  import("dom-to-image-more").then((domtoimage) => {
+    domtoimage.toBlob(element, {
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      style: { zoom: "1" },
+    }).then((blob: Blob) => {
+      if (blob) triggerDownload(blob, filename.endsWith(".png") ? filename : filename + ".png");
     });
   });
 }
