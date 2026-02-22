@@ -141,7 +141,7 @@ export default function App() {
   }
 
   return (
-    <div className="app" data-ui-theme={uiTheme} style={{ zoom: uiScale / 100 }}>
+    <div className="app" data-ui-theme={uiTheme} style={{ "--ui-scale": uiScale / 100 } as React.CSSProperties}>
       {showLanding && (
         <Suspense fallback={<div className="landing" style={{background:"#000"}} />}>
           <LandingPage onLaunch={() => setShowLanding(false)} />
@@ -320,7 +320,7 @@ export default function App() {
                 )}
               </div>
 
-              <div className="tab-dropdown-wrap" ref={scaleRef}>
+              <div className="tab-dropdown-wrap" ref={scaleRef} style={{ marginLeft: "auto" }}>
                 <button className="tab-theme-btn" onClick={() => setScaleOpen(o => !o)} title="UI Scale">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" />
@@ -331,7 +331,7 @@ export default function App() {
                   {uiScale}%
                 </button>
                 {scaleOpen && (
-                  <div className="tab-dropdown-menu">
+                  <div className="tab-dropdown">
                     {SCALE_OPTIONS.map(s => (
                       <button key={s} className={`tab-dropdown-item ${uiScale === s ? "active" : ""}`} onClick={() => changeScale(s)}>
                         {s}%
