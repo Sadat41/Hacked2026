@@ -6,6 +6,7 @@ import {
   CircleMarker,
   Marker,
   Popup,
+  ZoomControl,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -299,6 +300,7 @@ export default function MapView({ layers, onFeatureClick, onMapMove, sidebarOpen
         className="map-container"
         zoomControl={false}
       >
+        <ZoomControl position="bottomright" />
         <InvalidateSize sidebarOpen={sidebarOpen} />
         <MapEventHandler onMapMove={onMapMove} />
         <TileLayer

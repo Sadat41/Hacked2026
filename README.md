@@ -41,7 +41,7 @@ Everything runs client-side. There is no backend server -- the app fetches data 
 - Dynamic layer styling that adapts to the selected basemap
 
 ### Flood Hazard
-- Alberta flood mapping overlays (100-year, 200-year, 500-year return periods, ice-jam scenarios)
+- Alberta flood mapping overlays (100-year, 200-year, 500-year return periods)
 - Sourced from Alberta Environment ArcGIS FeatureServer
 
 <div align="center">
@@ -142,7 +142,7 @@ Everything runs client-side. There is no backend server -- the app fetches data 
  │ Properties      │  │ Climate        │  │ 100yr flood    │  │             │
  │ Permits         │  │ stations       │  │ 200yr flood    │  │ Basemap     │
  │ Drainage        │  │ Precipitation  │  │ 500yr flood    │  │ tiles       │
- │ Air quality     │  │ River flow     │  │ Ice-jam zones  │  │ (raster)    │
+ │ Air quality     │  │ River flow     │  │                │  │ (raster)    │
  │ Recreation      │  │ Snowfall       │  │                │  │             │
  └────────┬────────┘  └───────┬────────┘  └───────┬────────┘  └──────┬──────┘
           │                   │                    │                   │
@@ -190,7 +190,7 @@ Everything runs client-side. There is no backend server -- the app fetches data 
 |--------|----------|---------------|
 | **City of Edmonton Open Data** | `data.edmonton.ca/resource` | Property assessments, property details (lot size, zoning, year built), building permits, neighbourhood boundaries, subdivision boundaries, drainage infrastructure, recreation facilities, LRT stations, traffic signals, air quality monitoring, water level stations, climate stations |
 | **Environment Canada** | `api.weather.gc.ca` | Climate station inventory (1,500+ AB stations), daily precipitation, monthly precipitation, precipitation normals, snowfall normals, hydrometric river flow gauges and discharge data |
-| **Alberta Flood Mapping** | `services.arcgis.com` (ArcGIS FeatureServer) | 100-year flood zones, 200-year flood zones, 500-year flood zones, 100-year ice-jam flood zones, flood hazard areas |
+| **Alberta Flood Mapping** | `services.arcgis.com` (ArcGIS FeatureServer) | 100-year flood zones, 200-year flood zones, 500-year flood zones, flood hazard areas |
 | **Basemap Tiles** | CARTO, OSM, Esri, OpenTopoMap | Dark, Light (Voyager), Satellite (World Imagery), Terrain, Street map tiles |
 
 All data is fetched at runtime from public APIs. No data is bundled with the application.

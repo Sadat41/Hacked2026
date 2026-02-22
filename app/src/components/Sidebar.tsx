@@ -111,8 +111,6 @@ function LayerIcon({ id }: { id: string }) {
       return <svg {...s}><path d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /><path d="M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /><text x="12" y="10" textAnchor="middle" fontSize="8" fill="currentColor" stroke="none" fontWeight="700">100</text></svg>;
     case "flood-200yr":
       return <svg {...s}><path d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /><path d="M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /><text x="12" y="10" textAnchor="middle" fontSize="8" fill="currentColor" stroke="none" fontWeight="700">200</text></svg>;
-    case "flood-icejam-100yr":
-      return <svg {...s}><path d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /><line x1="12" y1="2" x2="12" y2="14" /><line x1="7" y1="5" x2="17" y2="11" /><line x1="17" y1="5" x2="7" y2="11" /></svg>;
     case "flood-500yr":
       return <svg {...s}><path d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /><path d="M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /><path d="M2 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0" /><text x="12" y="6" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none" fontWeight="700">500</text></svg>;
     default:

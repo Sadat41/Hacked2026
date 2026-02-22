@@ -72,7 +72,6 @@ const LAYER_COLORS: Record<ColorTheme, Record<string, LayerColorProfile>> = {
     "flood-hazard":   { pointColor: "#f43f5e", fillColor: "#e11d48", strokeColor: "#f43f5e", weight: 1.5, fillOpacity: 0.3, strokeOpacity: 0.8 },
     "flood-100yr":    { pointColor: "#3b82f6", fillColor: "#2563eb", strokeColor: "#3b82f6", weight: 1.5, fillOpacity: 0.3, strokeOpacity: 0.8 },
     "flood-200yr":    { pointColor: "#8b5cf6", fillColor: "#7c3aed", strokeColor: "#8b5cf6", weight: 1.5, fillOpacity: 0.25, strokeOpacity: 0.8 },
-    "flood-icejam-100yr": { pointColor: "#06b6d4", fillColor: "#0891b2", strokeColor: "#06b6d4", weight: 1.5, fillOpacity: 0.3, strokeOpacity: 0.8 },
     "flood-500yr":    { pointColor: "#ec4899", fillColor: "#db2777", strokeColor: "#ec4899", weight: 1.5, fillOpacity: 0.2, strokeOpacity: 0.8 },
   },
   light: {
@@ -96,7 +95,6 @@ const LAYER_COLORS: Record<ColorTheme, Record<string, LayerColorProfile>> = {
     "flood-hazard":   { pointColor: "#be123c", fillColor: "#e11d48", strokeColor: "#9f1239", weight: 2, fillOpacity: 0.35, strokeOpacity: 0.9 },
     "flood-100yr":    { pointColor: "#1d4ed8", fillColor: "#2563eb", strokeColor: "#1e40af", weight: 2, fillOpacity: 0.35, strokeOpacity: 0.9 },
     "flood-200yr":    { pointColor: "#6d28d9", fillColor: "#7c3aed", strokeColor: "#5b21b6", weight: 2, fillOpacity: 0.3, strokeOpacity: 0.9 },
-    "flood-icejam-100yr": { pointColor: "#0e7490", fillColor: "#0891b2", strokeColor: "#155e75", weight: 2, fillOpacity: 0.35, strokeOpacity: 0.9 },
     "flood-500yr":    { pointColor: "#be185d", fillColor: "#db2777", strokeColor: "#9d174d", weight: 2, fillOpacity: 0.25, strokeOpacity: 0.9 },
   },
   satellite: {
@@ -120,7 +118,6 @@ const LAYER_COLORS: Record<ColorTheme, Record<string, LayerColorProfile>> = {
     "flood-hazard":   { pointColor: "#fda4af", fillColor: "#fb7185", strokeColor: "#fff", weight: 2.5, fillOpacity: 0.4, strokeOpacity: 0.9 },
     "flood-100yr":    { pointColor: "#93c5fd", fillColor: "#60a5fa", strokeColor: "#fff", weight: 2.5, fillOpacity: 0.4, strokeOpacity: 0.9 },
     "flood-200yr":    { pointColor: "#c4b5fd", fillColor: "#a78bfa", strokeColor: "#fff", weight: 2.5, fillOpacity: 0.35, strokeOpacity: 0.9 },
-    "flood-icejam-100yr": { pointColor: "#67e8f9", fillColor: "#22d3ee", strokeColor: "#fff", weight: 2.5, fillOpacity: 0.4, strokeOpacity: 0.9 },
     "flood-500yr":    { pointColor: "#f9a8d4", fillColor: "#f472b6", strokeColor: "#fff", weight: 2.5, fillOpacity: 0.3, strokeOpacity: 0.9 },
   },
 };

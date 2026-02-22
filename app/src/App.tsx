@@ -31,7 +31,9 @@ const ENG_SUB_OPTIONS: { key: EngSubView; label: string }[] = [
 ];
 
 const LS_THEME_KEY = "hydrogrid-ui-theme";
+const LS_SCALE_KEY = "hydrogrid-ui-scale";
 const LS_WELCOME_KEY = "hydrogrid-welcome-done";
+const SCALE_OPTIONS = [80, 90, 100, 110, 120, 130, 140];
 
 const UI_THEME_OPTIONS: { key: UiTheme; label: string; desc: string; preview: string }[] = [
   { key: "terminal", label: "Terminal", desc: "Green-on-black hacker style", preview: "linear-gradient(135deg, #060d06, #0a150a)" },
@@ -49,6 +51,12 @@ export default function App() {
     try { return (localStorage.getItem(LS_THEME_KEY) as UiTheme) || "terminal"; }
     catch { return "terminal"; }
   });
+  const [uiScale, setUiScale] = useState(() => {
+    try { return parseInt(localStorage.getItem(LS_SCALE_KEY) || "120", 10); }
+    catch { return 120; }
+  });
+  const [scaleOpen, setScaleOpen] = useState(false);
+  const scaleRef = useRef<HTMLDivElement>(null);
   const floodDropdownRef = useRef<HTMLDivElement>(null);
   const engDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -90,6 +98,12 @@ export default function App() {
     try { localStorage.setItem(LS_THEME_KEY, next); } catch { /* ignore */ }
   }
 
+  function changeScale(s: number) {
+    setUiScale(s);
+    setScaleOpen(false);
+    try { localStorage.setItem(LS_SCALE_KEY, String(s)); } catch { /* ignore */ }
+  }
+
   useEffect(() => {
     loadVisibleLayers();
   }, [loadVisibleLayers]);
@@ -101,6 +115,9 @@ export default function App() {
       }
       if (engDropdownRef.current && !engDropdownRef.current.contains(e.target as Node)) {
         setEngDropdownOpen(false);
+      }
+      if (scaleRef.current && !scaleRef.current.contains(e.target as Node)) {
+        setScaleOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -124,7 +141,7 @@ export default function App() {
   }
 
   return (
-    <div className="app" data-ui-theme={uiTheme}>
+    <div className="app" data-ui-theme={uiTheme} style={{ zoom: uiScale / 100 }}>
       {showLanding && (
         <Suspense fallback={<div className="landing" style={{background:"#000"}} />}>
           <LandingPage onLaunch={() => setShowLanding(false)} />
@@ -297,6 +314,27 @@ export default function App() {
                         onClick={() => selectEngSub(opt.key)}
                       >
                         {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="tab-dropdown-wrap" ref={scaleRef}>
+                <button className="tab-theme-btn" onClick={() => setScaleOpen(o => !o)} title="UI Scale">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <line x1="11" y1="8" x2="11" y2="14" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                  </svg>
+                  {uiScale}%
+                </button>
+                {scaleOpen && (
+                  <div className="tab-dropdown-menu">
+                    {SCALE_OPTIONS.map(s => (
+                      <button key={s} className={`tab-dropdown-item ${uiScale === s ? "active" : ""}`} onClick={() => changeScale(s)}>
+                        {s}%
                       </button>
                     ))}
                   </div>

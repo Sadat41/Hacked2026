@@ -595,33 +595,6 @@ export const LAYER_CONFIGS: LayerConfig[] = [
     enabled: false,
   },
   {
-    id: "flood-icejam-100yr",
-    name: "Ice Jam Flood (100-Year)",
-    description:
-      "Flood zones from 1:100 year ice jam events. Ice jams cause unique flooding patterns along Alberta rivers in spring.",
-    category: "flood",
-    endpoint: abFloodLayer(2),
-    source: "arcgis",
-    type: "polygon",
-    style: {
-      color: "#06b6d4",
-      weight: 1.5,
-      opacity: 0.8,
-      fillColor: "#0891b2",
-      fillOpacity: 0.3,
-    },
-    maxFeatures: 2000,
-    popupFields: [
-      { key: "RiverName", label: "River" },
-      { key: "StudyName", label: "Study" },
-      { key: "FloodReturnPeriod", label: "Return Period (yrs)", format: "number" },
-      { key: "FloodProbability", label: "Annual Probability" },
-      { key: "InundationZone", label: "Zone" },
-      { key: "FloodMechanism", label: "Mechanism" },
-    ],
-    enabled: false,
-  },
-  {
     id: "flood-500yr",
     name: "500-Year Flood Inundation",
     description:
