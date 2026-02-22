@@ -196,7 +196,9 @@ function PipeLayer({
   return null;
 }
 
-/* ── Imperative manhole layer: zoom 13+ only ── */
+/* ── Imperative manhole layer: zoom 13+ only, with direct zoom gating ── */
+const MANHOLE_MIN_ZOOM = 13;
+
 function ManholeLayer({
   manholes,
   viewMode,
@@ -211,11 +213,22 @@ function ManholeLayer({
   const rendererRef = useRef<L.Canvas | null>(null);
   const popupRef = useRef<L.Popup | null>(null);
 
-  useEffect(() => {
+  const removeGroup = useCallback(() => {
     if (groupRef.current) {
       map.removeLayer(groupRef.current);
       groupRef.current = null;
     }
+  }, [map]);
+
+  // Instant hide when zoom drops below threshold — no waiting for React state
+  useMapEvents({
+    zoomend: () => {
+      if (map.getZoom() < MANHOLE_MIN_ZOOM) removeGroup();
+    },
+  });
+
+  useEffect(() => {
+    removeGroup();
     if (!visible || manholes.length === 0) return;
 
     if (!rendererRef.current) rendererRef.current = L.canvas({ padding: 0.5 });
@@ -259,13 +272,8 @@ function ManholeLayer({
     group.addTo(map);
     groupRef.current = group;
 
-    return () => {
-      if (groupRef.current) {
-        map.removeLayer(groupRef.current);
-        groupRef.current = null;
-      }
-    };
-  }, [manholes, viewMode, visible, map]);
+    return () => removeGroup();
+  }, [manholes, viewMode, visible, map, removeGroup]);
 
   return null;
 }
@@ -364,18 +372,23 @@ export default function DrainageWaterView() {
     return () => controller.abort();
   }, []);
 
-  // Debounced viewport handler — only for manholes
+  // Viewport handler — zoom updates instantly, manhole fetch is debounced
   const handleViewport = useCallback((bounds: LatLngBounds, z: number) => {
+    const floorZoom = Math.floor(z);
+    setZoom(floorZoom);
+
+    // Immediately clear manholes when below threshold
+    if (floorZoom < MANHOLE_MIN_ZOOM) {
+      clearTimeout(vpDebounceRef.current);
+      manholeAbortRef.current?.abort();
+      setManholes([]);
+      setManholesLoading(false);
+      return;
+    }
+
+    // Debounce the API fetch only
     clearTimeout(vpDebounceRef.current);
     vpDebounceRef.current = setTimeout(() => {
-      const roundedZoom = Math.round(z);
-      setZoom(roundedZoom);
-
-      if (roundedZoom < 13) {
-        setManholes([]);
-        return;
-      }
-
       manholeAbortRef.current?.abort();
       const controller = new AbortController();
       manholeAbortRef.current = controller;
@@ -383,7 +396,7 @@ export default function DrainageWaterView() {
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
       const where = `latitude > ${sw.lat} AND latitude < ${ne.lat} AND longitude > ${sw.lng} AND longitude < ${ne.lng}`;
-      const limit = roundedZoom >= 15 ? 10000 : 4000;
+      const limit = floorZoom >= 15 ? 10000 : 4000;
 
       setManholesLoading(true);
       fetch(
@@ -436,7 +449,7 @@ export default function DrainageWaterView() {
     ? AGE_COLORS
     : Object.fromEntries(Object.entries(PIPE_TYPE_META).map(([k, v]) => [k, v.color]));
 
-  const showManholes = visibleTypes["MANHOLE"] && zoom >= 13;
+  const showManholes = visibleTypes["MANHOLE"] && zoom >= MANHOLE_MIN_ZOOM;
 
   const loadingMsg = !pipesReady
     ? `Loading pipes... ${pipesLoaded.toLocaleString()}`
