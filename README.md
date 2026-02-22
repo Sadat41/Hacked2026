@@ -1,6 +1,14 @@
+<div align="center">
+
 # HydroGrid
 
 **Real-Time Hydrology & Infrastructure Analysis Platform**
+
+<br>
+
+![HydroGrid Demo](Previews/Demo.gif)
+
+<br>
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -12,9 +20,7 @@
 
 [Live Demo](https://hydrogrid.app) · [Features](#features) · [Architecture](#architecture) · [Installation](#installation) · [Data Sources](#data-sources) · [Team](#team)
 
----
-
-![HydroGrid Demo](Previews/Demo.gif)
+</div>
 
 ---
 
@@ -38,6 +44,14 @@ Everything runs client-side. There is no backend server -- the app fetches data 
 - Alberta flood mapping overlays (100-year, 200-year, 500-year return periods, ice-jam scenarios)
 - Sourced from Alberta Environment ArcGIS FeatureServer
 
+<div align="center">
+
+**Flood Hazard Mapping**
+
+<img src="Previews/Flood Hazard Preview.png" alt="Flood Hazard Preview" width="80%">
+
+</div>
+
 ### Precipitation Explorer
 - Browse 1,500+ Environment Canada climate stations across Alberta
 - Query daily, monthly, and normal precipitation data with custom date ranges
@@ -53,6 +67,14 @@ Everything runs client-side. There is no backend server -- the app fetches data 
 - Returns assessed value, zoning, lot size, building area, year built, garage type, tax class
 - Cross-references nearby facilities (recreation centres, LRT stations, schools)
 - Instant fly-to on the map with property marker
+
+<div align="center">
+
+**Property Assessment**
+
+<img src="Previews/Property Assessment .png" alt="Property Assessment" width="80%">
+
+</div>
 
 ### Drainage Design (Engineering)
 - Select a property or enter site parameters manually
@@ -71,6 +93,14 @@ Everything runs client-side. There is no backend server -- the app fetches data 
 - Unit-cost estimation for storm pipes, catch basins, manholes, grading, and LID features
 - Material and labour breakdowns with contingency
 - Total project cost summary with per-hectare and per-metre rates
+
+<div align="center">
+
+**Cost Analysis**
+
+<img src="Previews/Cost Analysis.png" alt="Cost Analysis" width="80%">
+
+</div>
 
 ---
 
