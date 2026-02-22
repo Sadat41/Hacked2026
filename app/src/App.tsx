@@ -44,7 +44,7 @@ const UI_THEME_OPTIONS: { key: UiTheme; label: string; desc: string; preview: st
 
 export default function App() {
   const { layers, toggleLayer, loadVisibleLayers, onMapMove } = useMapData();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768);
   const [activeView, setActiveView] = useState<ActiveView>("layers");
   const [floodDropdownOpen, setFloodDropdownOpen] = useState(false);
   const [engDropdownOpen, setEngDropdownOpen] = useState(false);
@@ -53,8 +53,10 @@ export default function App() {
     catch { return "terminal"; }
   });
   const [uiScale, setUiScale] = useState(() => {
-    try { return parseInt(localStorage.getItem(LS_SCALE_KEY) || "120", 10); }
-    catch { return 120; }
+    const isMobile = window.innerWidth <= 768;
+    const fallback = isMobile ? 100 : 120;
+    try { return isMobile ? 100 : parseInt(localStorage.getItem(LS_SCALE_KEY) || String(fallback), 10); }
+    catch { return fallback; }
   });
   const [scaleOpen, setScaleOpen] = useState(false);
   const scaleRef = useRef<HTMLDivElement>(null);
@@ -326,7 +328,7 @@ export default function App() {
                 )}
               </div>
 
-              <button className="tab-theme-btn" onClick={handleExport} title="Export current view as PNG" style={{ marginLeft: "auto" }}>
+              <button className="tab-theme-btn tab-export-btn" onClick={handleExport} title="Export current view as PNG" style={{ marginLeft: "auto" }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
@@ -335,7 +337,7 @@ export default function App() {
                 Export
               </button>
 
-              <div className="tab-dropdown-wrap" ref={scaleRef}>
+              <div className="tab-dropdown-wrap tab-scale-wrap" ref={scaleRef}>
                 <button className="tab-theme-btn" onClick={() => setScaleOpen(o => !o)} title="UI Scale">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" />
@@ -356,7 +358,7 @@ export default function App() {
                 )}
               </div>
 
-              <button className="tab-theme-btn" onClick={cycleUiTheme} title="Cycle theme">
+              <button className="tab-theme-btn tab-theme-cycle" onClick={cycleUiTheme} title="Cycle theme">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />

@@ -2429,38 +2429,256 @@
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
+  /* ── App Layout ── */
+  .app {
+    height: 100dvh;
+    width: 100%;
+  }
+
+  /* ── Nav Bar ── */
+  .tab-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 40px;
+    padding: 0 6px;
+    gap: 2px;
+    zoom: 1 !important;
+    overflow: visible !important;
+    flex-wrap: nowrap;
+    z-index: 5000;
+  }
+  .app-content {
+    margin-top: 40px;
+    height: calc(100dvh - 40px);
+    flex: none;
+  }
+
+  .tab-dropdown {
+    position: fixed;
+    top: 40px;
+    left: 0;
+    right: 0;
+    min-width: unset;
+    width: 100%;
+    border-radius: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    z-index: 6000;
+  }
+
+  .tab-brand {
+    font-size: 0;
+    padding-right: 6px;
+    gap: 0;
+    border-right: none;
+    flex-shrink: 0;
+  }
+  .tab-brand img { width: 22px; height: 22px; }
+
+  .tab-buttons {
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .tab-btn {
+    padding: 4px 8px;
+    font-size: 9px;
+    gap: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tab-btn svg { width: 12px; height: 12px; }
+  .tab-chevron { display: none; }
+
+  .tab-theme-btn {
+    padding: 3px 8px;
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+
+  /* Hide export and scale on mobile */
+  .tab-export-btn,
+  .tab-scale-wrap {
+    display: none !important;
+  }
+  .tab-theme-cycle {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* ── Sidebar ── */
   .sidebar {
     position: fixed;
-    top: 44px;
+    top: 40px;
     left: 0;
-    width: 100%;
-    min-width: unset;
-    height: calc(100vh - 44px);
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: 100vw !important;
+    height: 50vh;
+    z-index: 2000;
+    border-right: none;
+    border-bottom: 2px solid var(--hg-border-bright);
+    zoom: 1 !important;
+    margin-left: 0 !important;
+    opacity: 1;
+    transition: transform 0.3s ease;
   }
-
   .sidebar.closed {
-    margin-left: -100%;
+    margin-left: 0 !important;
+    transform: translateY(-110%);
+    pointer-events: none;
+  }
+  .sidebar.open {
+    transform: translateY(0);
   }
 
+  .sidebar-open-btn {
+    top: 48px;
+    left: 8px;
+    z-index: 2001;
+  }
+
+  /* ── Map ── */
+  .app-content {
+    position: relative;
+  }
+  .map-outer {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .map-container {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* ── Analysis Views (Precip, Hydro, Prop) ── */
   .precip-view {
     flex-direction: column;
+    width: 100%;
   }
-
   .precip-sidebar {
     width: 100%;
     min-width: unset;
-    max-height: 40vh;
+    max-height: 35vh;
+    border-right: none;
+    border-bottom: 1px solid var(--hg-border);
+  }
+  .precip-main {
+    flex: 1;
+    min-height: 0;
   }
 
   .prop-view {
     flex-direction: column;
   }
-
   .prop-sidebar {
     width: 100%;
     min-width: unset;
-    max-height: 45vh;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--hg-border);
   }
+
+  /* ── Storm Sim / Cost ── */
+  .eng-sidebar {
+    width: 100% !important;
+    min-width: unset !important;
+    max-height: 35vh !important;
+    border-right: none;
+    border-bottom: 1px solid var(--hg-border);
+  }
+  .sim-split-main {
+    flex-direction: column;
+  }
+  .site-map-panel {
+    height: 30vh !important;
+    min-height: 150px;
+  }
+  .sim-charts-area {
+    overflow-y: auto;
+  }
+
+  /* ── Chart panels ── */
+  .chart-panel {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto !important;
+    width: 100% !important;
+    max-height: 55vh;
+    border-radius: 12px 12px 0 0;
+    z-index: 3000;
+  }
+
+  /* ── Drainage Calculator ── */
+  .dc-table-wrap {
+    overflow-x: auto;
+  }
+  .dc-table {
+    font-size: 10px;
+    min-width: 500px;
+  }
+
+  /* ── General ── */
+  .export-bar {
+    padding: 6px 10px;
+  }
+  .export-btn {
+    font-size: 9px;
+    padding: 3px 8px;
+  }
+
+  /* ── Welcome Modal ── */
+  .welcome-modal {
+    padding: 20px 16px;
+    max-width: 95vw;
+  }
+  .welcome-grid {
+    gap: 6px;
+  }
+  .welcome-grid-themes {
+    flex-direction: column;
+  }
+}
+
+/* ── Very Small Screens (phone portrait) ── */
+@media (max-width: 480px) {
+  .tab-btn {
+    padding: 4px 6px;
+    font-size: 0;
+    gap: 0;
+  }
+  .tab-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  .tab-btn.active {
+    font-size: 8px;
+    gap: 2px;
+  }
+  .tab-theme-cycle {
+    font-size: 0;
+    padding: 4px 8px;
+  }
+  .tab-theme-cycle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .precip-sidebar-header { padding: 12px; }
+  .precip-sidebar-header h2 { font-size: 12px; }
+  .precip-section { padding: 10px 12px; }
+  .chart-panel-body { padding: 10px 12px; }
+  .precip-chart-section { padding: 12px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -3527,9 +3745,22 @@
 
 /* ── Responsive ── */
 @media (max-width: 700px) {
+  .landing-content { padding: 0 16px; }
+  .landing-title { letter-spacing: 0.08em; }
+  .landing-sub { letter-spacing: 0.08em; padding: 0 8px; }
+  .landing-btn { padding: 12px 24px; font-size: 12px; }
+  .landing-footer-inline { flex-direction: column; gap: 4px; align-items: center; }
+
   .ld-how-grid { grid-template-columns: 1fr; }
   .ld-members { flex-direction: column; align-items: center; }
   .ld-flow-sources { flex-direction: column; align-items: center; }
   .ld-flow-node { max-width: 100%; min-width: 0; }
   .landing-team, .landing-how { padding: 60px 20px; }
+
+  .ld-section-title { font-size: 22px; }
+  .ld-section-sub { font-size: 11px; }
+  .ld-how-card { padding: 16px; }
+  .ld-how-card h4 { font-size: 13px; }
+  .ld-how-card p { font-size: 11px; }
+  .ld-member-card { width: 100%; }
 }
