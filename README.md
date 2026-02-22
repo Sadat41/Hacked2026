@@ -10,7 +10,11 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 [![HackED 2026](https://img.shields.io/badge/HackED-2026-orange?style=flat)](https://hacked.compeclub.com/)
 
-[Live Demo](https://sadat41.github.io/Hacked2026/) · [Features](#features) · [Architecture](#architecture) · [Installation](#installation) · [Data Sources](#data-sources) · [Team](#team)
+[Live Demo](https://hydrogrid.app) · [Features](#features) · [Architecture](#architecture) · [Installation](#installation) · [Data Sources](#data-sources) · [Team](#team)
+
+---
+
+![HydroGrid Demo](Previews/Demo.gif)
 
 ---
 
@@ -173,8 +177,8 @@ All data is fetched at runtime from public APIs. No data is bundled with the app
 ### Clone and Install
 
 ```bash
-git clone https://github.com/Sadat41/Hacked2026.git
-cd Hacked2026/app
+git clone https://github.com/Sadat41/HydroGrid.git
+cd HydroGrid/app
 npm install
 ```
 
@@ -213,7 +217,7 @@ Builds the project and pushes the `dist/` folder to the `gh-pages` branch.
 ## Project Structure
 
 ```
-Hacked2026/
+HydroGrid/
 ├── README.md
 └── app/
     ├── public/                     Static assets (favicon, logo)
