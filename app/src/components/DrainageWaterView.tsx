@@ -2,14 +2,12 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
-  GeoJSON,
-  CircleMarker,
-  Popup,
   ZoomControl,
   useMap,
   useMapEvents,
 } from "react-leaflet";
-import type { LatLngBounds, PathOptions, Layer } from "leaflet";
+import L from "leaflet";
+import type { LatLngBounds } from "leaflet";
 import { EDMONTON_CENTER } from "../config/layers";
 import { BASEMAPS, type BasemapKey } from "../config/basemaps";
 import BasemapSwitcher, { getSavedBasemap } from "./BasemapSwitcher";
@@ -19,28 +17,31 @@ const PIPE_API = "https://data.edmonton.ca/resource/bh8y-pn5j.json";
 const MANHOLE_API = "https://data.edmonton.ca/resource/6waz-yxqq.json";
 const BATCH_SIZE = 50000;
 
-const PIPE_TYPE_META: Record<string, { color: string; dash: number[]; weight: number; label: string; style: string }> = {
-  STORM:      { color: "#38bdf8", dash: [],     weight: 2,   label: "Storm",     style: "Solid" },
-  SANITARY:   { color: "#a855f7", dash: [8, 4], weight: 2,   label: "Sanitary",  style: "Dashed" },
-  COMBINED:   { color: "#f97316", dash: [2, 4], weight: 2,   label: "Combined",  style: "Dotted" },
-  "FND DRAIN":{ color: "#22d3ee", dash: [],     weight: 1.2, label: "Fnd Drain", style: "Thin solid" },
-  WATER:      { color: "#3b82f6", dash: [],     weight: 2,   label: "Water",     style: "Solid" },
+const PIPE_TYPE_META: Record<
+  string,
+  { color: string; dash: number[]; weight: number; label: string; style: string }
+> = {
+  STORM: { color: "#38bdf8", dash: [], weight: 2, label: "Storm", style: "Solid" },
+  SANITARY: { color: "#a855f7", dash: [8, 4], weight: 2, label: "Sanitary", style: "Dashed" },
+  COMBINED: { color: "#f97316", dash: [2, 4], weight: 2, label: "Combined", style: "Dotted" },
+  "FND DRAIN": { color: "#22d3ee", dash: [], weight: 1.2, label: "Fnd Drain", style: "Thin solid" },
+  WATER: { color: "#3b82f6", dash: [], weight: 2, label: "Water", style: "Solid" },
 };
 
 const AGE_COLORS: Record<string, string> = {
   "110-119": "#e11d48",
   "100-109": "#dc2626",
-  "90-99":   "#ef4444",
-  "80-89":   "#7c3aed",
-  "70-79":   "#c026d3",
-  "60-69":   "#2563eb",
-  "50-59":   "#3b82f6",
-  "40-49":   "#0ea5e9",
-  "30-39":   "#06b6d4",
-  "20-29":   "#0891b2",
-  "10-19":   "#0d9488",
-  "0-9":     "#10b981",
-  Unknown:   "#6b7280",
+  "90-99": "#ef4444",
+  "80-89": "#7c3aed",
+  "70-79": "#c026d3",
+  "60-69": "#2563eb",
+  "50-59": "#3b82f6",
+  "40-49": "#0ea5e9",
+  "30-39": "#06b6d4",
+  "20-29": "#0891b2",
+  "10-19": "#0d9488",
+  "0-9": "#10b981",
+  Unknown: "#6b7280",
 };
 
 const AGE_GROUPS = [
@@ -59,6 +60,26 @@ function getAgeGroup(yearConst: number | null): string {
   return `${decade}-${decade + 9}`;
 }
 
+function pipeStyle(
+  viewMode: "age" | "type",
+  feature?: GeoJSON.Feature,
+): L.PathOptions {
+  const pType = feature?.properties?.type as string;
+  const yrRaw = feature?.properties?.year_const;
+  const yr = yrRaw ? parseInt(yrRaw, 10) : null;
+
+  if (viewMode === "type") {
+    const meta = PIPE_TYPE_META[pType];
+    return {
+      color: meta?.color ?? "#888",
+      weight: meta?.weight ?? 2,
+      opacity: 0.85,
+      dashArray: meta?.dash?.length ? meta.dash.join(" ") : undefined,
+    };
+  }
+  return { color: AGE_COLORS[getAgeGroup(yr)] ?? "#888", weight: 2, opacity: 0.85 };
+}
+
 interface AggRow { type: string; year_const: string; cnt: string }
 type ViewMode = "age" | "type";
 
@@ -66,8 +87,6 @@ interface PipeIndexed {
   type: string;
   year_const: string | undefined;
   geometry: GeoJSON.MultiLineString;
-  lat: number;
-  lng: number;
 }
 
 interface ManholeRaw {
@@ -78,7 +97,11 @@ interface ManholeRaw {
   road_name?: string;
 }
 
-const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+interface PipeRaw {
+  type: string;
+  year_const?: string;
+  geometry_line?: GeoJSON.MultiLineString;
+}
 
 function InvalidateSize() {
   const map = useMap();
@@ -86,6 +109,168 @@ function InvalidateSize() {
   return null;
 }
 
+/* ── Imperative pipe layer: created ONCE, never destroyed on pan/zoom ── */
+function PipeLayer({
+  pipes,
+  viewMode,
+  visibleTypes,
+}: {
+  pipes: PipeIndexed[];
+  viewMode: ViewMode;
+  visibleTypes: Record<string, boolean>;
+}) {
+  const map = useMap();
+  const layerRef = useRef<L.GeoJSON | null>(null);
+  const rendererRef = useRef<L.Canvas | null>(null);
+  const popupRef = useRef<L.Popup | null>(null);
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
+
+  const geoData = useMemo((): GeoJSON.FeatureCollection => {
+    const features: GeoJSON.Feature[] = [];
+    for (const p of pipes) {
+      if (!visibleTypes[p.type]) continue;
+      features.push({
+        type: "Feature",
+        geometry: p.geometry,
+        properties: { type: p.type, year_const: p.year_const },
+      });
+    }
+    return { type: "FeatureCollection", features };
+  }, [pipes, visibleTypes]);
+
+  useEffect(() => {
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
+      layerRef.current = null;
+    }
+    if (geoData.features.length === 0) return;
+
+    if (!rendererRef.current) rendererRef.current = L.canvas({ padding: 0.5 });
+    if (!popupRef.current)
+      popupRef.current = L.popup({ className: "hydrogrid-popup", maxWidth: 280 });
+
+    const popup = popupRef.current;
+    const opts: L.GeoJSONOptions & { renderer?: L.Renderer } = {
+      style: (f) => pipeStyle(viewModeRef.current, f as GeoJSON.Feature),
+      renderer: rendererRef.current!,
+      onEachFeature: (feature, lyr) => {
+        lyr.on("click", (e: L.LeafletMouseEvent) => {
+          const p = feature.properties ?? {};
+          const yr = p.year_const || "Unknown";
+          const age = p.year_const ? CURRENT_YEAR - parseInt(p.year_const, 10) : "?";
+          popup
+            .setLatLng(e.latlng)
+            .setContent(
+              `<div style="font-family:monospace;font-size:12px;max-width:240px">
+                <div style="font-weight:700;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:3px">${p.type ?? "Pipe"}</div>
+                <table style="border-collapse:collapse">
+                  <tr><td style="padding:1px 8px 1px 0;opacity:0.6">Year</td><td>${yr}</td></tr>
+                  <tr><td style="padding:1px 8px 1px 0;opacity:0.6">Age</td><td>${age} yrs</td></tr>
+                </table>
+              </div>`,
+            )
+            .openOn(map);
+        });
+      },
+    };
+    const layer = L.geoJSON(geoData as never, opts as never);
+    layer.addTo(map);
+    layerRef.current = layer;
+
+    return () => {
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    };
+  }, [geoData, map]);
+
+  // View mode switch → cheap restyle, no layer recreation
+  useEffect(() => {
+    layerRef.current?.setStyle((f) =>
+      pipeStyle(viewMode, f as GeoJSON.Feature),
+    );
+  }, [viewMode]);
+
+  return null;
+}
+
+/* ── Imperative manhole layer: zoom 13+ only ── */
+function ManholeLayer({
+  manholes,
+  viewMode,
+  visible,
+}: {
+  manholes: ManholeRaw[];
+  viewMode: ViewMode;
+  visible: boolean;
+}) {
+  const map = useMap();
+  const groupRef = useRef<L.LayerGroup | null>(null);
+  const rendererRef = useRef<L.Canvas | null>(null);
+  const popupRef = useRef<L.Popup | null>(null);
+
+  useEffect(() => {
+    if (groupRef.current) {
+      map.removeLayer(groupRef.current);
+      groupRef.current = null;
+    }
+    if (!visible || manholes.length === 0) return;
+
+    if (!rendererRef.current) rendererRef.current = L.canvas({ padding: 0.5 });
+    if (!popupRef.current)
+      popupRef.current = L.popup({ className: "hydrogrid-popup", maxWidth: 240 });
+
+    const popup = popupRef.current;
+    const group = L.layerGroup();
+
+    for (const m of manholes) {
+      const lat = parseFloat(m.latitude);
+      const lng = parseFloat(m.longitude);
+      if (isNaN(lat) || isNaN(lng)) continue;
+      const yr = m.year_const ? parseInt(m.year_const, 10) : null;
+      const ag = getAgeGroup(yr);
+      const color = viewMode === "type" ? "#94a3b8" : (AGE_COLORS[ag] ?? "#94a3b8");
+
+      const marker = L.circleMarker([lat, lng], {
+        radius: 3,
+        color: "#e2e8f0",
+        weight: 0.5,
+        fillColor: color,
+        fillOpacity: 0.8,
+        renderer: rendererRef.current,
+      });
+      marker.on("click", (e) => {
+        popup
+          .setLatLng(e.latlng)
+          .setContent(
+            `<div style="font-family:monospace;font-size:12px;max-width:200px">
+              <div style="font-weight:700;margin-bottom:4px">Manhole — ${m.type}</div>
+              <div>Year: ${m.year_const || "Unknown"}</div>
+              ${m.road_name ? `<div>Road: ${m.road_name}</div>` : ""}
+            </div>`,
+          )
+          .openOn(map);
+      });
+      group.addLayer(marker);
+    }
+
+    group.addTo(map);
+    groupRef.current = group;
+
+    return () => {
+      if (groupRef.current) {
+        map.removeLayer(groupRef.current);
+        groupRef.current = null;
+      }
+    };
+  }, [manholes, viewMode, visible, map]);
+
+  return null;
+}
+
+/* ── Viewport tracker (only for manhole loading) ── */
 function ViewportTracker({ onViewport }: { onViewport: (b: LatLngBounds, z: number) => void }) {
   const map = useMapEvents({
     moveend: () => onViewport(map.getBounds(), map.getZoom()),
@@ -95,12 +280,7 @@ function ViewportTracker({ onViewport }: { onViewport: (b: LatLngBounds, z: numb
   return null;
 }
 
-interface PipeRaw {
-  type: string;
-  year_const?: string;
-  geometry_line?: GeoJSON.MultiLineString;
-}
-
+/* ── Data fetching ── */
 async function fetchAllPipes(
   onProgress: (loaded: number) => void,
   signal: AbortSignal,
@@ -115,14 +295,7 @@ async function fetchAllPipes(
     const batch: PipeRaw[] = await res.json();
     for (const p of batch) {
       if (!p.geometry_line?.coordinates?.[0]?.[0]) continue;
-      const coord = p.geometry_line.coordinates[0][0];
-      all.push({
-        type: p.type,
-        year_const: p.year_const,
-        geometry: p.geometry_line,
-        lng: coord[0],
-        lat: coord[1],
-      });
+      all.push({ type: p.type, year_const: p.year_const, geometry: p.geometry_line });
     }
     onProgress(all.length);
     if (batch.length < BATCH_SIZE) break;
@@ -131,6 +304,7 @@ async function fetchAllPipes(
   return all;
 }
 
+/* ── Main component ── */
 export default function DrainageWaterView() {
   const [viewMode, setViewMode] = useState<ViewMode>("age");
   const [basemap, setBasemap] = useState<BasemapKey>(getSavedBasemap);
@@ -143,8 +317,7 @@ export default function DrainageWaterView() {
   const [pipesLoaded, setPipesLoaded] = useState(0);
   const [pipesReady, setPipesReady] = useState(false);
 
-  const [viewport, setViewport] = useState<{ swLat: number; swLng: number; neLat: number; neLng: number; zoom: number } | null>(null);
-
+  const [zoom, setZoom] = useState(12);
   const [manholes, setManholes] = useState<ManholeRaw[]>([]);
   const [manholesLoading, setManholesLoading] = useState(false);
 
@@ -177,7 +350,7 @@ export default function DrainageWaterView() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load ALL pipes at mount (batched), pre-index with representative point
+  // Load ALL pipes once
   useEffect(() => {
     const controller = new AbortController();
     fetchAllPipes((n) => setPipesLoaded(n), controller.signal)
@@ -191,49 +364,38 @@ export default function DrainageWaterView() {
     return () => controller.abort();
   }, []);
 
-  // Debounced viewport update — snaps to grid to avoid excessive re-renders
-  const handleViewport = useCallback((bounds: LatLngBounds, zoom: number) => {
+  // Debounced viewport handler — only for manholes
+  const handleViewport = useCallback((bounds: LatLngBounds, z: number) => {
     clearTimeout(vpDebounceRef.current);
     vpDebounceRef.current = setTimeout(() => {
+      const roundedZoom = Math.round(z);
+      setZoom(roundedZoom);
+
+      if (roundedZoom < 13) {
+        setManholes([]);
+        return;
+      }
+
+      manholeAbortRef.current?.abort();
+      const controller = new AbortController();
+      manholeAbortRef.current = controller;
+
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
-      const prec = 3;
-      setViewport({
-        swLat: parseFloat(sw.lat.toFixed(prec)),
-        swLng: parseFloat(sw.lng.toFixed(prec)),
-        neLat: parseFloat(ne.lat.toFixed(prec)),
-        neLng: parseFloat(ne.lng.toFixed(prec)),
-        zoom: Math.round(zoom),
-      });
-    }, 300);
+      const where = `latitude > ${sw.lat} AND latitude < ${ne.lat} AND longitude > ${sw.lng} AND longitude < ${ne.lng}`;
+      const limit = roundedZoom >= 15 ? 10000 : 4000;
+
+      setManholesLoading(true);
+      fetch(
+        `${MANHOLE_API}?$where=${encodeURIComponent(where)}&$select=type,year_const,latitude,longitude,road_name&$limit=${limit}`,
+        { signal: controller.signal },
+      )
+        .then((r) => r.json())
+        .then((data: ManholeRaw[]) => { if (!controller.signal.aborted) setManholes(data); })
+        .catch(() => {})
+        .finally(() => { if (!controller.signal.aborted) setManholesLoading(false); });
+    }, 250);
   }, []);
-
-  // Load manholes viewport-based, only at zoom 13+
-  useEffect(() => {
-    if (!viewport) return;
-    if (viewport.zoom < 13 || !visibleTypes["MANHOLE"]) {
-      setManholes([]);
-      return;
-    }
-    manholeAbortRef.current?.abort();
-    const controller = new AbortController();
-    manholeAbortRef.current = controller;
-
-    const where = `latitude > ${viewport.swLat} AND latitude < ${viewport.neLat} AND longitude > ${viewport.swLng} AND longitude < ${viewport.neLng}`;
-    const limit = viewport.zoom >= 15 ? 10000 : 4000;
-
-    setManholesLoading(true);
-    fetch(
-      `${MANHOLE_API}?$where=${encodeURIComponent(where)}&$select=type,year_const,latitude,longitude,road_name&$limit=${limit}`,
-      { signal: controller.signal },
-    )
-      .then((r) => r.json())
-      .then((data: ManholeRaw[]) => { if (!controller.signal.aborted) setManholes(data); })
-      .catch(() => {})
-      .finally(() => { if (!controller.signal.aborted) setManholesLoading(false); });
-
-    return () => controller.abort();
-  }, [viewport, visibleTypes]);
 
   const { ageData, typeData, totalPipes, totalManholes } = useMemo(() => {
     const ageMap: Record<string, { pipes: number; manholes: number }> = {};
@@ -259,59 +421,6 @@ export default function DrainageWaterView() {
     return { ageData: ageMap, typeData: typeMap, totalPipes: tp, totalManholes: tm };
   }, [pipeStats, manholeStats]);
 
-  // Viewport-filtered + zoom-capped pipe GeoJSON
-  const { pipeGeoJson, pipeCount } = useMemo(() => {
-    if (!viewport || !pipesReady) return { pipeGeoJson: EMPTY_FC, pipeCount: 0 };
-
-    const { swLat, swLng, neLat, neLng, zoom } = viewport;
-
-    // Filter to viewport + type visibility
-    const inView: PipeIndexed[] = [];
-    for (const p of allPipes) {
-      if (!visibleTypes[p.type]) continue;
-      if (p.lat >= swLat && p.lat <= neLat && p.lng >= swLng && p.lng <= neLng) {
-        inView.push(p);
-      }
-    }
-
-    // Cap features at lower zooms for performance
-    const maxFeatures = zoom >= 15 ? 60000 : zoom >= 13 ? 40000 : zoom >= 11 ? 20000 : 8000;
-    let selected = inView;
-    if (inView.length > maxFeatures) {
-      const step = Math.ceil(inView.length / maxFeatures);
-      selected = [];
-      for (let i = 0; i < inView.length; i += step) selected.push(inView[i]);
-    }
-
-    const features: GeoJSON.Feature[] = selected.map((p) => ({
-      type: "Feature",
-      geometry: p.geometry,
-      properties: { type: p.type, year_const: p.year_const },
-    }));
-
-    return { pipeGeoJson: { type: "FeatureCollection" as const, features }, pipeCount: selected.length };
-  }, [allPipes, pipesReady, viewport, visibleTypes]);
-
-  const getStyle = useCallback(
-    (feature?: GeoJSON.Feature): PathOptions => {
-      const pType = feature?.properties?.type as string;
-      const yrRaw = feature?.properties?.year_const;
-      const yr = yrRaw ? parseInt(yrRaw, 10) : null;
-
-      if (viewMode === "type") {
-        const meta = PIPE_TYPE_META[pType];
-        return {
-          color: meta?.color ?? "#888",
-          weight: meta?.weight ?? 2,
-          opacity: 0.85,
-          dashArray: meta?.dash?.length ? meta.dash.join(" ") : undefined,
-        };
-      }
-      return { color: AGE_COLORS[getAgeGroup(yr)] ?? "#888", weight: 2, opacity: 0.85 };
-    },
-    [viewMode],
-  );
-
   const bm = BASEMAPS[basemap];
   const maxBarPipes = useMemo(() => {
     const data = viewMode === "age" ? ageData : typeData;
@@ -323,9 +432,11 @@ export default function DrainageWaterView() {
 
   const barGroups = viewMode === "age" ? AGE_GROUPS : Object.keys(PIPE_TYPE_META);
   const barData = viewMode === "age" ? ageData : typeData;
-  const barColors = viewMode === "age" ? AGE_COLORS : Object.fromEntries(Object.entries(PIPE_TYPE_META).map(([k, v]) => [k, v.color]));
+  const barColors = viewMode === "age"
+    ? AGE_COLORS
+    : Object.fromEntries(Object.entries(PIPE_TYPE_META).map(([k, v]) => [k, v.color]));
 
-  const showManholes = visibleTypes["MANHOLE"] && (viewport?.zoom ?? 0) >= 13;
+  const showManholes = visibleTypes["MANHOLE"] && zoom >= 13;
 
   const loadingMsg = !pipesReady
     ? `Loading pipes... ${pipesLoaded.toLocaleString()}`
@@ -400,17 +511,8 @@ export default function DrainageWaterView() {
               <span className="dw-legend-label">Manhole</span>
             </button>
           </div>
-          <p className="dw-note">Manholes visible at zoom 13+. Pipes thin out when zoomed far out. Click legend to toggle.</p>
+          <p className="dw-note">Manholes appear at zoom 13+. Click legend to toggle layers.</p>
         </div>
-
-        {pipesReady && viewport && (
-          <div className="dw-section">
-            <p className="dw-note" style={{ fontStyle: "normal" }}>
-              Showing <strong>{pipeCount.toLocaleString()}</strong> pipes in view
-              {showManholes && <> &bull; <strong>{manholes.length.toLocaleString()}</strong> manholes</>}
-            </p>
-          </div>
-        )}
 
         <div className="dw-section dw-footer">
           <p>
@@ -424,56 +526,18 @@ export default function DrainageWaterView() {
 
       <div className={`dw-map-outer ${bm.isDark ? "theme-dark" : "theme-light"}`}>
         {loadingMsg && <div className="dw-map-loading">{loadingMsg}</div>}
-        <MapContainer center={EDMONTON_CENTER} zoom={12} className="map-container" zoomControl={false} preferCanvas={true}>
+        <MapContainer center={EDMONTON_CENTER} zoom={12} className="map-container" zoomControl={false} preferCanvas>
           <ZoomControl position="bottomright" />
           <InvalidateSize />
           <ViewportTracker onViewport={handleViewport} />
           <TileLayer key={basemap} attribution={bm.attr} url={bm.url} {...("maxZoom" in bm ? { maxZoom: bm.maxZoom } : {})} />
           {"labelsUrl" in bm && <TileLayer key={basemap + "-labels"} url={bm.labelsUrl as string} zIndex={650} />}
 
-          {pipeGeoJson.features.length > 0 && (
-            <GeoJSON
-              key={`p-${pipeCount}-${viewMode}`}
-              data={pipeGeoJson}
-              style={getStyle}
-              onEachFeature={(feature: GeoJSON.Feature, layer: Layer) => {
-                const p = feature.properties ?? {};
-                const yr = p.year_const || "Unknown";
-                const age = p.year_const ? CURRENT_YEAR - parseInt(p.year_const, 10) : "?";
-                layer.bindPopup(
-                  `<div style="font-family:monospace;font-size:12px;max-width:240px">
-                    <div style="font-weight:700;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:3px">${p.type ?? "Pipe"}</div>
-                    <table style="border-collapse:collapse">
-                      <tr><td style="padding:1px 8px 1px 0;opacity:0.6">Year</td><td>${yr}</td></tr>
-                      <tr><td style="padding:1px 8px 1px 0;opacity:0.6">Age</td><td>${age} yrs</td></tr>
-                    </table>
-                  </div>`,
-                  { className: "hydrogrid-popup", maxWidth: 280 },
-                );
-              }}
-            />
+          {pipesReady && (
+            <PipeLayer pipes={allPipes} viewMode={viewMode} visibleTypes={visibleTypes} />
           )}
 
-          {showManholes &&
-            manholes.map((m, i) => {
-              const lat = parseFloat(m.latitude);
-              const lng = parseFloat(m.longitude);
-              if (isNaN(lat) || isNaN(lng)) return null;
-              const yr = m.year_const ? parseInt(m.year_const, 10) : null;
-              const ag = getAgeGroup(yr);
-              const color = viewMode === "type" ? "#94a3b8" : (AGE_COLORS[ag] ?? "#94a3b8");
-              return (
-                <CircleMarker key={`mh-${i}`} center={[lat, lng]} radius={3} pathOptions={{ color: "#e2e8f0", weight: 0.5, fillColor: color, fillOpacity: 0.8 }}>
-                  <Popup className="hydrogrid-popup" maxWidth={240}>
-                    <div style={{ fontFamily: "monospace", fontSize: 12, maxWidth: 200 }}>
-                      <div style={{ fontWeight: 700, marginBottom: 4 }}>Manhole — {m.type}</div>
-                      <div>Year: {m.year_const || "Unknown"}</div>
-                      {m.road_name && <div>Road: {m.road_name}</div>}
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              );
-            })}
+          <ManholeLayer manholes={manholes} viewMode={viewMode} visible={showManholes} />
         </MapContainer>
         <BasemapSwitcher active={basemap} onChange={setBasemap} />
       </div>
