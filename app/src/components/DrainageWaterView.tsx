@@ -77,29 +77,6 @@ interface ManholeRaw {
   road_name?: string;
 }
 
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function multiLineStringLengthKm(geom: GeoJSON.MultiLineString): number {
-  let total = 0;
-  for (const line of geom.coordinates) {
-    for (let i = 1; i < line.length; i++) {
-      total += haversineKm(line[i - 1][1], line[i - 1][0], line[i][1], line[i][0]);
-    }
-  }
-  return total;
-}
-
 function InvalidateSize() {
   const map = useMap();
   useEffect(() => { setTimeout(() => map.invalidateSize(), 100); }, [map]);
@@ -466,8 +443,8 @@ export default function DrainageWaterView() {
                 <CircleMarker
                   key={`mh-${i}`}
                   center={[lat, lng]}
+                  radius={3}
                   pathOptions={{
-                    radius: 3,
                     color: "#e2e8f0",
                     weight: 0.5,
                     fillColor: color,
