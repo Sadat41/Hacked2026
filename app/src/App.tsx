@@ -106,8 +106,8 @@ export default function App() {
   }
 
   const handleExport = useCallback(() => {
-    const content = document.querySelector(".app-content") as HTMLElement | null;
-    if (content) downloadPNG(content, `hydrogrid_${activeView}.png`);
+    const app = document.querySelector(".app") as HTMLElement | null;
+    if (app) downloadPNG(app, `hydrogrid_${activeView}.png`);
   }, [activeView]);
 
   useEffect(() => {

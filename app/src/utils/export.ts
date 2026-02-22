@@ -22,7 +22,14 @@ export function downloadCSV(rows: readonly any[], filename: string) {
 
 export function downloadPNG(element: HTMLElement, filename: string) {
   import("html2canvas").then(({ default: html2canvas }) => {
-    html2canvas(element, { backgroundColor: null, scale: 2 }).then((canvas) => {
+    html2canvas(element, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      foreignObjectRendering: false,
+    }).then((canvas) => {
       canvas.toBlob((blob) => {
         if (blob) triggerDownload(blob, filename.endsWith(".png") ? filename : filename + ".png");
       });
