@@ -2910,6 +2910,40 @@
   color: #222 !important;
 }
 
+/* ===== Export Buttons ===== */
+.export-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--hg-border);
+  background: var(--hg-panel);
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--hg-border);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--hg-green-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.export-btn:hover {
+  background: var(--hg-green-faint);
+  color: var(--hg-green);
+  border-color: var(--hg-border-bright);
+}
+.export-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
 /* ===== Welcome Modal ===== */
 .welcome-overlay {
   position: fixed;

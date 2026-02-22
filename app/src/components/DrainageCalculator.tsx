@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { downloadCSV } from "../utils/export";
 import {
   BarChart,
   Bar,
@@ -287,7 +288,13 @@ export default function DrainageCalculator({ lotSize, buildingArea, address, zon
 
       {/* ── Design Storms ──────────────────────────────── */}
       <div className="dc-section">
-        <h4 className="dc-section-label">Design Storms — Rational Method (Q = CiA)</h4>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+          <h4 className="dc-section-label" style={{margin:0}}>Design Storms — Rational Method (Q = CiA)</h4>
+          <button className="export-btn" onClick={() => downloadCSV(results.map(r => ({Return_Period_yr: r.rp, Intensity_mm_hr: r.i.toFixed(1), Q_Baseline_m3s: r.Q_base.toFixed(4), Q_LID_m3s: r.Q_lid.toFixed(4), Pipe_Baseline_mm: r.pipe_base, Pipe_LID_mm: r.pipe_lid, Vol_Baseline_m3: r.vol_base.toFixed(2), Vol_LID_m3: r.vol_lid.toFixed(2)})), "drainage_design.csv")}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            CSV
+          </button>
+        </div>
         <p className="dc-note">
           IDF data: verified for Edmonton (ECCC Stn 3012216) · Duration = t<sub>c</sub> = {tc.toFixed(1)} min
         </p>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { downloadCSV, downloadPNG } from "../utils/export";
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -241,6 +242,16 @@ export default function StormSimulationView() {
             <div className="precip-overlay-loading" style={{flex:1}}>Search or enter a property to run simulation</div>
           ) : (
           <div className="sim-charts-area">
+            <div className="export-bar" style={{borderBottom:"none",padding:"8px 0"}}>
+              <button className="export-btn" onClick={() => downloadCSV(steps.map(s => ({Time_hr: s.time, Intensity_mm_hr: s.intensity.toFixed(2), Infiltration_mm_hr: s.infRate.toFixed(2), Runoff_mm: s.runoff.toFixed(3), CumRain_mm: s.cumRain.toFixed(2), CumInfiltration_mm: s.cumInf.toFixed(2), CumRunoff_mm: s.cumRunoff.toFixed(2)})), "storm_simulation.csv")}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                CSV
+              </button>
+              <button className="export-btn" onClick={() => { const el = document.querySelector(".sim-charts-area"); if (el) downloadPNG(el as HTMLElement, "storm_simulation.png"); }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                PNG
+              </button>
+            </div>
             <div className="sim-chart-card">
               <h4>Rainfall Hyetograph (SCS Type II)</h4>
               <ResponsiveContainer width="100%" height={180}>

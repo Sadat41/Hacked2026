@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { downloadCSV, downloadPNG } from "../utils/export";
 import {
   MapContainer,
   TileLayer,
@@ -586,6 +587,18 @@ export default function HydrometricView() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                 </button>
               </div>
+              {monthlyData.length > 0 && (
+                <div className="export-bar">
+                  <button className="export-btn" onClick={() => downloadCSV(monthlyData as unknown as Record<string, unknown>[], `hydrometric_${selectedStation?.name || "data"}.csv`)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    CSV
+                  </button>
+                  <button className="export-btn" onClick={() => { const el = document.querySelector(".chart-panel-body"); if (el) downloadPNG(el as HTMLElement, `hydrometric_${selectedStation?.name || "chart"}.png`); }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    PNG
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="chart-panel-body">

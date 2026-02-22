@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { downloadCSV } from "../utils/export";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, PieChart, Pie, Legend,
@@ -317,7 +318,13 @@ export default function CostAnalysisView() {
           ) : (
           <div className="sim-charts-area">
             <div className="sim-chart-card">
-              <h4>Cost Estimate Summary <span style={{fontSize:10,opacity:0.5,fontWeight:400}}>(based on user-provided unit rates)</span></h4>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <h4>Cost Estimate Summary <span style={{fontSize:10,opacity:0.5,fontWeight:400}}>(based on user-provided unit rates)</span></h4>
+                <button className="export-btn" onClick={() => downloadCSV(chartData.map(d => ({Item: d.name, Cost: d.cost})), "cost_analysis.csv")}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                  CSV
+                </button>
+              </div>
               <div className="cost-summary-grid">
                 <div className="cost-summary-item cost-total"><span className="cost-summary-label">Total Project Estimate</span><span className="cost-summary-value">{fmt(costs.grandTotal)}</span></div>
                 <div className="cost-summary-item"><span className="cost-summary-label">Storm Infrastructure</span><span className="cost-summary-value">{fmt(costs.infraTotal)}</span></div>
