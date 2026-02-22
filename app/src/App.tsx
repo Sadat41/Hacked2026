@@ -353,7 +353,6 @@ export default function App() {
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                Export
               </button>
 
               <div className="tab-dropdown-wrap tab-scale-wrap" ref={scaleRef}>
@@ -364,7 +363,6 @@ export default function App() {
                     <line x1="11" y1="8" x2="11" y2="14" />
                     <line x1="8" y1="11" x2="14" y2="11" />
                   </svg>
-                  {uiScale}%
                 </button>
                 {scaleOpen && (
                   <div className="tab-dropdown">
