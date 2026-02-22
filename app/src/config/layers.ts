@@ -650,9 +650,9 @@ export const LAYER_CONFIGS: LayerConfig[] = [
   },
 ];
 
-export const ALBERTA_CENTER: [number, number] = [53.9333, -116.5765];
+export const ALBERTA_CENTER: [number, number] = [53.5861, -113.4938];
 export const EDMONTON_CENTER: [number, number] = [53.5461, -113.4938];
-export const DEFAULT_ZOOM = 6;
+export const DEFAULT_ZOOM = 11;
 
 export const CATEGORY_META = {
   infrastructure: { label: "Infrastructure", icon: "building" },

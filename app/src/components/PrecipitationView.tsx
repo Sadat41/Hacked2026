@@ -367,7 +367,7 @@ export default function PrecipitationView() {
       <div className={`precip-main ${bm.isDark ? "theme-dark" : "theme-light"}`}>
         <MapContainer
           center={ALBERTA_CENTER}
-          zoom={5}
+          zoom={11}
           className="precip-map-full"
           zoomControl={true}
         >
