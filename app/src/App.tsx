@@ -33,9 +33,15 @@ const ENG_SUB_OPTIONS: { key: EngSubView; label: string }[] = [
 ];
 
 const LS_THEME_KEY = "hydrogrid-ui-theme";
-const LS_SCALE_KEY = "hydrogrid-ui-scale";
 const LS_WELCOME_KEY = "hydrogrid-welcome-done";
 const SCALE_OPTIONS = [80, 90, 100, 110, 120, 130, 140];
+
+function getAutoScale(): number {
+  const w = window.innerWidth;
+  if (w <= 768) return 100;
+  if (w >= 1920) return 120;
+  return Math.round(100 + ((w - 768) / (1920 - 768)) * 20);
+}
 
 const UI_THEME_OPTIONS: { key: UiTheme; label: string; desc: string; preview: string }[] = [
   { key: "terminal", label: "Terminal", desc: "Green-on-black hacker style", preview: "linear-gradient(135deg, #060d06, #0a150a)" },
@@ -53,12 +59,8 @@ export default function App() {
     try { return (localStorage.getItem(LS_THEME_KEY) as UiTheme) || "terminal"; }
     catch { return "terminal"; }
   });
-  const [uiScale, setUiScale] = useState(() => {
-    const isMobile = window.innerWidth <= 768;
-    const fallback = isMobile ? 100 : 120;
-    try { return isMobile ? 100 : parseInt(localStorage.getItem(LS_SCALE_KEY) || String(fallback), 10); }
-    catch { return fallback; }
-  });
+  const [uiScale, setUiScale] = useState(getAutoScale);
+  const [scaleManual, setScaleManual] = useState(false);
   const [scaleOpen, setScaleOpen] = useState(false);
   const scaleRef = useRef<HTMLDivElement>(null);
   const floodDropdownRef = useRef<HTMLDivElement>(null);
@@ -104,9 +106,22 @@ export default function App() {
 
   function changeScale(s: number) {
     setUiScale(s);
+    setScaleManual(true);
     setScaleOpen(false);
-    try { localStorage.setItem(LS_SCALE_KEY, String(s)); } catch { /* ignore */ }
   }
+
+  function resetAutoScale() {
+    setScaleManual(false);
+    setUiScale(getAutoScale());
+    setScaleOpen(false);
+  }
+
+  useEffect(() => {
+    if (scaleManual) return;
+    function onResize() { setUiScale(getAutoScale()); }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [scaleManual]);
 
   const handleExport = useCallback(() => {
     const app = document.querySelector(".app") as HTMLElement | null;
@@ -366,8 +381,11 @@ export default function App() {
                 </button>
                 {scaleOpen && (
                   <div className="tab-dropdown">
+                    <button className={`tab-dropdown-item ${!scaleManual ? "active" : ""}`} onClick={resetAutoScale}>
+                      Auto ({getAutoScale()}%)
+                    </button>
                     {SCALE_OPTIONS.map(s => (
-                      <button key={s} className={`tab-dropdown-item ${uiScale === s ? "active" : ""}`} onClick={() => changeScale(s)}>
+                      <button key={s} className={`tab-dropdown-item ${scaleManual && uiScale === s ? "active" : ""}`} onClick={() => changeScale(s)}>
                         {s}%
                       </button>
                     ))}

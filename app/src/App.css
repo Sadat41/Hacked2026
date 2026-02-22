@@ -122,6 +122,8 @@
   align-items: center;
   gap: 5px;
   padding: 5px 12px;
+  min-height: 27px;
+  box-sizing: border-box;
   border: 1px solid var(--hg-border);
   border-radius: 2px;
   background: transparent;
